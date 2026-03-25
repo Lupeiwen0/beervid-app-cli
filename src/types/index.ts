@@ -153,3 +153,66 @@ export interface ProductCursor {
   shopToken: string
   showcaseToken: string
 }
+
+// ─── Workflows ────────────────────────────────────────────────────────────────
+
+export interface WorkflowWarning {
+  code: string
+  message: string
+}
+
+export interface NormalizedVideoQueryResult {
+  videos: NormalizedVideoItem[]
+  raw: QueryVideoData
+}
+
+export interface TTFlowStatusResult {
+  pollCount: number
+  finalStatus: string
+  reason: string | null
+  postIds: string[]
+  raw: VideoStatusData | null
+}
+
+export interface TTFlowQueryResult extends NormalizedVideoQueryResult {
+  attempts: number
+}
+
+export interface TTWorkflowResult {
+  flowType: 'tt'
+  upload: NormalUploadResult
+  publish: NormalPublishResult
+  status: TTFlowStatusResult
+  videoId: string | null
+  query: TTFlowQueryResult | null
+  warnings: WorkflowWarning[]
+}
+
+export interface ProductQuerySummary {
+  productType: ProductType
+  pageSize: number
+  pagesScanned: number
+  productCount: number
+  nextCursor: string | null
+  reachedPageLimit: boolean
+}
+
+export interface SelectedProductSummary {
+  selectionMode: 'manual' | 'interactive' | 'automatic'
+  id: string
+  title: string
+  salesCount: number
+  source: string
+  price: unknown
+  brandName: string
+  shopName: string
+}
+
+export interface TTSWorkflowResult {
+  flowType: 'tts'
+  productQuery: ProductQuerySummary
+  selectedProduct: SelectedProductSummary
+  upload: TtsUploadResult
+  publish: ShoppablePublishResult
+  warnings: WorkflowWarning[]
+}

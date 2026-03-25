@@ -37,6 +37,8 @@ export BEERVID_APP_BASE_URL="https://open.beervid.ai"  # 可选，有默认值
 | `beervid poll-status` | 轮询发布状态 |
 | `beervid query-video` | 查询视频统计数据 |
 | `beervid query-products` | 查询 TTS 商品列表 |
+| `beervid publish-tt-flow` | TT 完整发布流程：上传、发布、轮询、查数 |
+| `beervid publish-tts-flow` | TTS 完整发布流程：查商品、选商品、上传、发布 |
 
 ## 快速示例
 
@@ -44,6 +46,22 @@ export BEERVID_APP_BASE_URL="https://open.beervid.ai"  # 可选，有默认值
 beervid get-oauth-url --type tt
 beervid upload --file ./video.mp4
 beervid publish --type normal --business-id biz_123 --video-url https://cdn.beervid.ai/uploads/xxx.mp4
+```
+
+## 完整流程示例
+
+```bash
+# TT：上传 -> 发布 -> 轮询 -> 查询数据
+beervid publish-tt-flow --business-id biz_123 --file ./video.mp4 --caption "My video"
+
+# TTS：自动选商品 -> 上传 -> 挂车发布
+beervid publish-tts-flow --creator-id open_user_abc --file ./video.mp4
+
+# TTS：交互式选商品
+beervid publish-tts-flow --creator-id open_user_abc --file ./video.mp4 --interactive
+
+# TTS：手动指定商品
+beervid publish-tts-flow --creator-id open_user_abc --file ./video.mp4 --product-id prod_123 --product-title "Widget"
 ```
 
 详细用法见 [SKILL.md](./SKILL.md)。如需查看完整 API 参考，请在仓库源码中阅读 `references/api-reference.md`。

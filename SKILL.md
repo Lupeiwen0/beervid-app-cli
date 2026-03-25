@@ -282,6 +282,8 @@ export BEERVID_APP_BASE_URL="https://open.beervid.ai"  # 可选，有默认值
 | `beervid poll-status` | 轮询发布状态 | `--business-id <id> --share-id <id>` |
 | `beervid query-video` | 查询视频数据 | `--business-id <id> --item-ids <id1,id2>` |
 | `beervid query-products` | 查询 TTS 商品 | `--creator-id <id>` |
+| `beervid publish-tt-flow` | TT 完整发布流程 | `--business-id <id> --file <路径或URL>` |
+| `beervid publish-tts-flow` | TTS 完整发布流程 | `--creator-id <id> --file <路径或URL>` |
 
 ### 使用示例
 
@@ -358,6 +360,36 @@ beervid query-products --creator-id open_user_abc --product-type shop
 beervid query-products --creator-id open_user_abc --cursor eyJ...
 ```
 
+#### TT 完整发布流程
+```bash
+# 上传 -> 发布 -> 轮询 -> 查询视频数据
+beervid publish-tt-flow \
+  --business-id biz_12345 \
+  --file ./video.mp4 \
+  --caption "Amazing video! #viral"
+```
+
+#### TTS 完整发布流程
+```bash
+# 自动选择销量最高商品
+beervid publish-tts-flow \
+  --creator-id open_user_abc \
+  --file ./video.mp4
+
+# 交互式选择商品
+beervid publish-tts-flow \
+  --creator-id open_user_abc \
+  --file ./video.mp4 \
+  --interactive
+
+# 手动指定商品
+beervid publish-tts-flow \
+  --creator-id open_user_abc \
+  --file ./video.mp4 \
+  --product-id prod_789 \
+  --product-title "Premium Widget"
+```
+
 ### 仓库源码中的 legacy 脚本
 
 如果你是在仓库源码中做二次开发，legacy 脚本仍可复用 `scripts/api-client.mjs`：
@@ -389,4 +421,14 @@ beervid poll-status --business-id biz_123 --share-id share_abc
 
 # 4. 查询数据
 beervid query-video --business-id biz_123 --item-ids 7123456789012345678
+```
+
+**TT 一键完整流程：**
+```bash
+beervid publish-tt-flow --business-id biz_123 --file ./video.mp4 --caption "My video"
+```
+
+**TTS 一键完整流程：**
+```bash
+beervid publish-tts-flow --creator-id open_user_abc --file ./video.mp4
 ```

@@ -6,6 +6,8 @@ import { register as registerPublish } from './commands/publish.js'
 import { register as registerPollStatus } from './commands/poll-status.js'
 import { register as registerQueryVideo } from './commands/query-video.js'
 import { register as registerQueryProducts } from './commands/query-products.js'
+import { register as registerPublishTtFlow } from './commands/publish-tt-flow.js'
+import { register as registerPublishTtsFlow } from './commands/publish-tts-flow.js'
 
 const cli = cac('beervid')
 
@@ -16,6 +18,8 @@ registerPublish(cli)
 registerPollStatus(cli)
 registerQueryVideo(cli)
 registerQueryProducts(cli)
+registerPublishTtFlow(cli)
+registerPublishTtsFlow(cli)
 
 cli.help()
 cli.version('1.0.0')
