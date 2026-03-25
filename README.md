@@ -1,8 +1,17 @@
 # beervid-app-cli
 
-BEERVID 第三方应用 Open API 的 Claude Code Skill，提供 TikTok 视频发布、账号授权、数据查询等完整能力的 CLI 脚本和 API 参考文档。
+BEERVID 第三方应用 Open API 的 TypeScript CLI 和 Claude Code Skill，提供 TikTok 视频发布、账号授权、数据查询等完整能力。
 
 ## 安装
+
+### npm CLI
+
+```bash
+npm install -g beervid-app-cli
+beervid --help
+```
+
+### Claude Code Skill
 
 将本仓库克隆到 Claude Code 的 skills 目录：
 
@@ -19,14 +28,22 @@ export BEERVID_APP_BASE_URL="https://open.beervid.ai"  # 可选，有默认值
 
 ## 功能概览
 
-| 脚本 | 功能 |
+| 命令 | 功能 |
 |------|------|
-| `scripts/get-oauth-url.mjs` | 获取 TT/TTS OAuth 授权链接 |
-| `scripts/get-account-info.mjs` | 查询账号信息 |
-| `scripts/upload.mjs` | 上传视频（支持本地文件和 URL） |
-| `scripts/publish.mjs` | 发布视频（普通/挂车） |
-| `scripts/poll-status.mjs` | 轮询发布状态 |
-| `scripts/query-video.mjs` | 查询视频统计数据 |
-| `scripts/query-products.mjs` | 查询 TTS 商品列表 |
+| `beervid get-oauth-url` | 获取 TT/TTS OAuth 授权链接 |
+| `beervid get-account-info` | 查询账号信息 |
+| `beervid upload` | 上传视频（支持本地文件和 URL） |
+| `beervid publish` | 发布视频（普通/挂车） |
+| `beervid poll-status` | 轮询发布状态 |
+| `beervid query-video` | 查询视频统计数据 |
+| `beervid query-products` | 查询 TTS 商品列表 |
 
-详细用法见 [SKILL.md](./SKILL.md)，API 参考见 [references/api-reference.md](./references/api-reference.md)。
+## 快速示例
+
+```bash
+beervid get-oauth-url --type tt
+beervid upload --file ./video.mp4
+beervid publish --type normal --business-id biz_123 --video-url https://cdn.beervid.ai/uploads/xxx.mp4
+```
+
+详细用法见 [SKILL.md](./SKILL.md)。如需查看完整 API 参考，请在仓库源码中阅读 `references/api-reference.md`。

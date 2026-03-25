@@ -261,9 +261,9 @@ OAuth 回调
 
 详细的请求/响应示例见 → `references/api-reference.md`
 
-## CLI 脚本命令
+## CLI 命令
 
-`scripts/` 目录下提供了可直接执行的 Node.js 脚本（ESM，需要 Node.js 18+），覆盖所有 API 能力。
+推荐使用已安装的 `beervid` 命令。仓库中的 `scripts/` 目录仅作为 legacy 参考保留，不随 npm 包发布。
 
 **前置条件：** 设置环境变量后即可使用：
 ```bash
@@ -273,54 +273,54 @@ export BEERVID_APP_BASE_URL="https://open.beervid.ai"  # 可选，有默认值
 
 ### 命令一览
 
-| 脚本 | 功能 | 核心参数 |
+| 命令 | 功能 | 核心参数 |
 |------|------|---------|
-| `get-oauth-url.mjs` | 获取 OAuth 授权链接 | `--type tt\|tts` |
-| `get-account-info.mjs` | 查询账号信息 | `--type TT\|TTS --account-id <id>` |
-| `upload.mjs` | 上传视频（支持本地文件和 URL） | `--file <路径或URL> [--type tts --creator-id <id>]` |
-| `publish.mjs` | 发布视频（普通/挂车） | `--type normal\|shoppable` + 对应参数 |
-| `poll-status.mjs` | 轮询发布状态 | `--business-id <id> --share-id <id>` |
-| `query-video.mjs` | 查询视频数据 | `--business-id <id> --item-ids <id1,id2>` |
-| `query-products.mjs` | 查询 TTS 商品 | `--creator-id <id>` |
+| `beervid get-oauth-url` | 获取 OAuth 授权链接 | `--type tt\|tts` |
+| `beervid get-account-info` | 查询账号信息 | `--type TT\|TTS --account-id <id>` |
+| `beervid upload` | 上传视频（支持本地文件和 URL） | `--file <路径或URL> [--type tts --creator-id <id>]` |
+| `beervid publish` | 发布视频（普通/挂车） | `--type normal\|shoppable` + 对应参数 |
+| `beervid poll-status` | 轮询发布状态 | `--business-id <id> --share-id <id>` |
+| `beervid query-video` | 查询视频数据 | `--business-id <id> --item-ids <id1,id2>` |
+| `beervid query-products` | 查询 TTS 商品 | `--creator-id <id>` |
 
 ### 使用示例
 
 #### 获取授权链接
 ```bash
-node scripts/get-oauth-url.mjs --type tt
-node scripts/get-oauth-url.mjs --type tts
+beervid get-oauth-url --type tt
+beervid get-oauth-url --type tts
 ```
 
 #### 查询账号信息
 ```bash
-node scripts/get-account-info.mjs --type TT --account-id 7281234567890
+beervid get-account-info --type TT --account-id 7281234567890
 ```
 
 #### 上传视频
 ```bash
 # 本地文件上传
-node scripts/upload.mjs --file ./my-video.mp4
+beervid upload --file ./my-video.mp4
 
 # 远程 URL 上传（自动下载后上传）
-node scripts/upload.mjs --file https://example.com/video.mp4
+beervid upload --file https://example.com/video.mp4
 
 # TTS 挂车上传
-node scripts/upload.mjs --file ./video.mp4 --type tts --creator-id open_user_abc
+beervid upload --file ./video.mp4 --type tts --creator-id open_user_abc
 
 # 使用已有的上传凭证（跳过自动获取）
-node scripts/upload.mjs --file ./video.mp4 --token upt.xxx
+beervid upload --file ./video.mp4 --token upt.xxx
 ```
 
 #### 发布视频
 ```bash
 # 普通发布
-node scripts/publish.mjs --type normal \
+beervid publish --type normal \
   --business-id biz_12345 \
   --video-url https://cdn.beervid.ai/uploads/xxx.mp4 \
   --caption "Amazing video! #viral"
 
 # 挂车发布
-node scripts/publish.mjs --type shoppable \
+beervid publish --type shoppable \
   --creator-id open_user_abc \
   --file-id vf_abc123 \
   --product-id prod_789 \
@@ -331,36 +331,36 @@ node scripts/publish.mjs --type shoppable \
 #### 轮询发布状态
 ```bash
 # 默认每 3 秒轮询一次，最多 60 次
-node scripts/poll-status.mjs --business-id biz_12345 --share-id share_abc123
+beervid poll-status --business-id biz_12345 --share-id share_abc123
 
 # 自定义间隔和次数
-node scripts/poll-status.mjs --business-id biz_12345 --share-id share_abc123 --interval 5 --max-polls 30
+beervid poll-status --business-id biz_12345 --share-id share_abc123 --interval 5 --max-polls 30
 ```
 
 #### 查询视频数据
 ```bash
 # 单个视频
-node scripts/query-video.mjs --business-id biz_12345 --item-ids 7123456789012345678
+beervid query-video --business-id biz_12345 --item-ids 7123456789012345678
 
 # 多个视频
-node scripts/query-video.mjs --business-id biz_12345 --item-ids 7123456789012345678,7123456789012345679
+beervid query-video --business-id biz_12345 --item-ids 7123456789012345678,7123456789012345679
 ```
 
 #### 查询商品列表
 ```bash
 # 全部商品（shop + showcase 合并去重）
-node scripts/query-products.mjs --creator-id open_user_abc
+beervid query-products --creator-id open_user_abc
 
 # 仅店铺商品
-node scripts/query-products.mjs --creator-id open_user_abc --product-type shop
+beervid query-products --creator-id open_user_abc --product-type shop
 
 # 分页查询
-node scripts/query-products.mjs --creator-id open_user_abc --cursor eyJ...
+beervid query-products --creator-id open_user_abc --cursor eyJ...
 ```
 
-### 基础模块 api-client.mjs
+### 仓库源码中的 legacy 脚本
 
-所有脚本共享 `scripts/api-client.mjs` 基础模块，提供：
+如果你是在仓库源码中做二次开发，legacy 脚本仍可复用 `scripts/api-client.mjs`：
 - `openApiGet/Post/Upload` — 统一认证和错误处理的请求函数
 - `resolveFileInput(input)` — 自动判断 URL 或本地路径，统一转为 File 对象
 - `parseArgs / requireArgs` — 命令行参数解析和校验
@@ -376,17 +376,17 @@ import { openApiPost, resolveFileInput, parseArgs } from './api-client.mjs'
 **普通视频从上传到数据查询：**
 ```bash
 # 1. 上传视频
-node scripts/upload.mjs --file ./video.mp4
+beervid upload --file ./video.mp4
 # 输出: { "fileUrl": "https://cdn.beervid.ai/uploads/xxx.mp4", ... }
 
 # 2. 发布视频
-node scripts/publish.mjs --type normal --business-id biz_123 --video-url https://cdn.beervid.ai/uploads/xxx.mp4 --caption "My video"
+beervid publish --type normal --business-id biz_123 --video-url https://cdn.beervid.ai/uploads/xxx.mp4 --caption "My video"
 # 输出: { "shareId": "share_abc", ... }
 
 # 3. 轮询状态直到完成
-node scripts/poll-status.mjs --business-id biz_123 --share-id share_abc
+beervid poll-status --business-id biz_123 --share-id share_abc
 # 输出: 视频 ID: 7123456789012345678
 
 # 4. 查询数据
-node scripts/query-video.mjs --business-id biz_123 --item-ids 7123456789012345678
+beervid query-video --business-id biz_123 --item-ids 7123456789012345678
 ```
