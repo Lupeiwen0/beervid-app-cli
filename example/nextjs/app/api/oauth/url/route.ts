@@ -1,6 +1,10 @@
 /**
  * GET /api/oauth/url?type=tt|tts
  * 获取 OAuth 授权 URL
+ *
+ * 生产环境：如果要往授权链接里追加你方自定义安全字段，
+ * 先判断现有 state 是否为 JSON 对象；若是，再在该 JSON 中追加字段。
+ * 详见 docs/oauth-callback.md
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { openApiGet } from '@/lib/beervid-client'

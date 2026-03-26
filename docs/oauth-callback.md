@@ -16,6 +16,9 @@
 2. **用户跳转授权**：将用户重定向到返回的 URL
 3. **接收回调**：用户授权后，TikTok 回调你的服务器
 
+> **说明**：获取到的授权链接中通常已经包含 `state` 参数。
+> 如果你需要附加自定义安全字段，做法不是新增一个 `state` 参数，而是解析现有 `state`，在其 JSON 中追加字段后再写回授权链接。
+
 ---
 
 ## 回调参数
@@ -29,6 +32,83 @@ OAuth 授权完成后，回调 URL 会携带以下关键参数：
 
 > **重要**：`ttAbId` 就是后续所有 TT API 的 `businessId`，`ttsAbId` 就是所有 TTS API 的 `creatorUserOpenId`。
 > 这两个值必须可靠持久化，丢失意味着需要用户重新授权。
+
+---
+
+## 获取授权链接后如何向已有 State 追加自定义字段
+
+如果获取到的授权链接里已经自带 `state`，并且它的值是一个 JSON 字符串，可以在拿到 OAuth URL 后解析这个 JSON，再把你方的安全 token 追加进去：
+
+```typescript
+function tryParseJsonObject(value: string): Record<string, unknown> | null {
+  try {
+    const parsed = JSON.parse(value) as unknown
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+function appendTokenToOAuthUrlState(
+  rawUrl: string,
+  customStateToken: string
+): string {
+  const url = new URL(rawUrl)
+  const rawState = url.searchParams.get('state')
+
+  if (!rawState) {
+    throw new Error('授权链接中缺少 state 参数')
+  }
+
+  const parsedState = tryParseJsonObject(rawState)
+  if (!parsedState) {
+    throw new Error('授权链接中的 state 不是可追加字段的 JSON 对象')
+  }
+
+  const nextState = {
+    ...parsedState,
+    customStateToken,
+  }
+
+  url.searchParams.set('state', JSON.stringify(nextState))
+  return url.toString()
+}
+
+async function getTtOAuthUrlWithState(userId: string): Promise<string> {
+  const customStateToken = generateStateToken(userId)
+  const rawUrl = await openApiGet<string>('/api/v1/open/thirdparty-auth/tt-url')
+  return appendTokenToOAuthUrlState(rawUrl, customStateToken)
+}
+
+async function getTtsOAuthUrlWithState(userId: string): Promise<string> {
+  const customStateToken = generateStateToken(userId)
+  const data = await openApiGet<{ crossBorderUrl: string }>(
+    '/api/v1/open/thirdparty-auth/tts-url'
+  )
+  return appendTokenToOAuthUrlState(data.crossBorderUrl, customStateToken)
+}
+```
+
+回调时再从 `state` JSON 中取回你追加的字段并校验：
+
+```typescript
+function parseCustomStateToken(state: string): string {
+  const parsed = tryParseJsonObject(state) as { customStateToken?: string } | null
+  if (!parsed) {
+    throw new Error('state 不是合法 JSON 对象')
+  }
+  if (!parsed.customStateToken) {
+    throw new Error('state 中缺少 customStateToken')
+  }
+  return parsed.customStateToken
+}
+```
+
+> **说明**：字段名 `customStateToken` 只是示例，你也可以改成 `token`、`nonce`、`appState` 等业务上更合适的名字。
+> 如果授权链接里的 `state` 不是 JSON 对象，就不要按这个示例直接 `JSON.parse`；应改为使用平台允许的编码方式，或采用你当前链路已有的透传机制。
 
 ---
 

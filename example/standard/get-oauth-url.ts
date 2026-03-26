@@ -4,6 +4,10 @@
  * 用法：
  *   npx tsx get-oauth-url.ts --type tt
  *   npx tsx get-oauth-url.ts --type tts
+ *
+ * 生产环境：如果要往授权链接里追加你方自定义安全字段，
+ * 先判断现有 state 是否为 JSON 对象；若是，再在该 JSON 中追加字段。
+ * 详见 docs/oauth-callback.md
  */
 
 import { parseArgs } from 'node:util'

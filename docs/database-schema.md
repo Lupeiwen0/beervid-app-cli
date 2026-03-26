@@ -49,6 +49,7 @@ CREATE TABLE beervid_accounts (
 
   -- 时间
   authorized_at   TIMESTAMP    DEFAULT CURRENT_TIMESTAMP COMMENT 'OAuth 授权时间',
+  deleted_at      TIMESTAMP    DEFAULT NULL COMMENT '软删除时间',
   created_at      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
   updated_at      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
@@ -116,9 +117,10 @@ CREATE TABLE beervid_videos (
   data_synced_at  TIMESTAMP    DEFAULT NULL COMMENT '最后一次数据同步时间',
 
   -- 幂等控制
-  idempotency_key VARCHAR(128) DEFAULT NULL COMMENT '发布幂等键，防止重复发布',
+  idempotency_key VARCHAR(128) DEFAULT NULL COMMENT '发布请求的稳定幂等键，防止重复发布',
 
   -- 时间
+  deleted_at      TIMESTAMP    DEFAULT NULL COMMENT '软删除时间',
   created_at      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP,
   updated_at      TIMESTAMP    DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
@@ -140,7 +142,7 @@ CREATE TABLE beervid_videos (
 | `share_id` | 普通视频发布返回，用于后续 `poll-status` 轮询 |
 | `video_id` | 挂车发布直接返回；普通发布从轮询结果 `post_ids[0]` 获取 |
 | `publish_status` | 核心状态字段，定时任务依据此字段扫描待轮询记录 |
-| `idempotency_key` | 建议用 `{accountId}:{fileHash}:{timestamp}` 组合 |
+| `idempotency_key` | 建议使用你方业务侧稳定唯一值，如 `publish_request_id`、草稿 ID 或客户端 requestId；不要拼接时间戳 |
 | `idx_status_poll` | 复合索引，加速"查找所有 PROCESSING_DOWNLOAD 且距上次轮询超过 N 秒"的查询 |
 
 ---
@@ -174,6 +176,7 @@ CREATE TABLE beervid_products (
   -- 缓存管理
   cached_at           TIMESTAMP    DEFAULT CURRENT_TIMESTAMP COMMENT '首次缓存时间',
   refreshed_at        TIMESTAMP    DEFAULT CURRENT_TIMESTAMP COMMENT '最后刷新时间',
+  deleted_at          TIMESTAMP    DEFAULT NULL COMMENT '软删除时间',
 
   -- 索引
   UNIQUE KEY uk_product_creator (product_id, creator_user_open_id),
@@ -192,6 +195,7 @@ CREATE TABLE beervid_products (
 | `images` | 存储已解析的图片 URL 数组（非 BEERVID 原始格式），解析方法见 SKILL.md |
 | `review_status` + `inventory_status` | 筛选可发布商品：仅 `APPROVED` + `IN_STOCK` 可用于挂车发布 |
 | `refreshed_at` | 缓存淘汰依据，建议超过 24 小时重新拉取 |
+| `deleted_at` | 若采用 `docs/tts-product-cache.md` 中的全量替换方案，需要用它标记旧缓存失效 |
 
 ---
 
@@ -221,7 +225,7 @@ CREATE TABLE beervid_products (
 
 ## 补充建议
 
-1. **软删除**：建议所有表增加 `deleted_at TIMESTAMP DEFAULT NULL` 字段，支持软删除
+1. **软删除**：本文示例已将 `deleted_at` 纳入推荐表结构；如果你不采用软删除，也要同步调整 `docs/tts-product-cache.md` 中依赖该字段的 SQL
 2. **审计日志**：高敏感操作（发布、授权）建议独立记录操作日志表
 3. **分库分表**：如视频表数据量大，可按 `account_id` 分片
 4. **PostgreSQL 用户**：将 `AUTO_INCREMENT` 替换为 `GENERATED ALWAYS AS IDENTITY`，`JSON` 替换为 `JSONB`

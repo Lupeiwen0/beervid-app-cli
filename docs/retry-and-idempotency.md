@@ -136,14 +136,19 @@ function isRetryableError(error: Error): boolean {
 // 生成幂等键
 function generatePublishIdempotencyKey(
   accountId: string,
-  fileIdentifier: string,  // fileUrl 或 videoFileId
-  timestamp?: number
+  publishRequestId: string  // 由你方业务生成，并在重试时复用
 ): string {
-  // 使用 accountId + 文件标识 + 时间窗口，确保同一文件在短时间内不会被重复发布
-  const timeWindow = Math.floor((timestamp ?? Date.now()) / (60 * 1000))  // 1 分钟窗口
-  return `publish:${accountId}:${fileIdentifier}:${timeWindow}`
+  return `publish:${accountId}:${publishRequestId}`
 }
 ```
+
+`publishRequestId` 应该是一次“发布意图”的稳定标识，例如：
+
+- 你方数据库里的发布草稿 ID
+- 前端首次点击发布时生成的 `clientRequestId`
+- 业务单号 / 任务 ID
+
+关键点是：**首次提交和后续重试必须使用同一个值**。不要把时间戳、当前分钟窗口这类会变化的值拼进幂等键，否则跨时间窗口重试时会失去防重效果。
 
 ### 数据库层幂等
 
@@ -151,7 +156,7 @@ function generatePublishIdempotencyKey(
 async function publishWithIdempotency(params: PublishParams): Promise<PublishResult> {
   const idempotencyKey = generatePublishIdempotencyKey(
     params.accountId,
-    params.fileUrl ?? params.fileId
+    params.publishRequestId
   )
 
   // ① 检查是否已有记录
@@ -193,6 +198,9 @@ async function publishWithIdempotency(params: PublishParams): Promise<PublishRes
   }
 }
 ```
+
+> **不要只用 `fileUrl` / `videoFileId` 当幂等键。**
+> 同一个素材在业务上可能允许被多次发布；真正应该唯一的是“这一次发布请求”。
 
 ### 上传幂等（MD5 去重）
 

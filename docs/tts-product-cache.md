@@ -55,6 +55,8 @@
 
 商品查询需要同时查询 `shop` 和 `showcase` 两种来源，按 `id` 去重合并。
 
+以下示例默认采用 [`docs/database-schema.md`](./database-schema.md) 中包含 `deleted_at` 的软删除表结构。
+
 ```typescript
 async function refreshProductCache(
   creatorId: string,
@@ -205,6 +207,8 @@ WHERE creator_user_open_id = ?
 ORDER BY sales_count DESC
 LIMIT 20;
 ```
+
+如果你不采用软删除，可以去掉 `deleted_at IS NULL` 条件，并在刷新缓存时改成物理删除或全量覆盖。
 
 ---
 
