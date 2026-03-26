@@ -3,17 +3,12 @@ import { printResult } from '../client/index.js'
 import {
   fetchProductPool,
   sortProductsForSelection,
-  buildSelectedProductSummary,
-  buildSkippedProductQuerySummary,
   promptForProductSelection,
   uploadTtsVideo,
   publishTtsVideo,
 } from '../workflows/index.js'
 import type {
   ProductType,
-  SelectedProductSummary,
-  TTSWorkflowResult,
-  WorkflowWarning,
   NormalizedProductItem,
 } from '../types/index.js'
 import { rethrowIfProcessExit } from './utils.js'
@@ -118,14 +113,11 @@ export function register(cli: CAC): void {
         try {
           console.log('开始执行 TTS 完整发布流程...')
 
-          const warnings: WorkflowWarning[] = []
-          let selectionMode: SelectedProductSummary['selectionMode'] = 'automatic'
           let selectedProduct: NormalizedProductItem
-          let productPoolSummary: TTSWorkflowResult['productQuery'] | undefined
+          let queriedProducts: unknown = null
 
           // If both --product-id and --product-title are provided, skip product scan entirely
           if (options.productId && options.productTitle) {
-            selectionMode = 'manual'
             console.log('1/4 已手动指定商品，跳过商品查询...')
             selectedProduct = buildManualProduct(options.productId, options.productTitle)
           } else {
@@ -136,25 +128,20 @@ export function register(cli: CAC): void {
               pageSize,
               maxProductPages
             )
-            productPoolSummary = productPool.summary
+            queriedProducts = productPool.rawGroups
 
             if (productPool.summary.reachedPageLimit && productPool.summary.nextCursor) {
-              warnings.push({
-                code: 'PRODUCT_SCAN_LIMIT_REACHED',
-                message: `商品扫描已达到页数上限 ${maxProductPages}，仍存在未拉取分页`,
-              })
+              console.warn(`商品扫描已达到页数上限 ${maxProductPages}，仍存在未拉取分页`)
             }
 
             if (productPool.summary.failedSources.length > 0) {
-              warnings.push({
-                code: 'PRODUCT_SOURCE_PARTIAL_FAILURE',
-                message: `以下商品源请求失败: ${productPool.summary.failedSources.join(', ')}，商品池可能不完整`,
-              })
+              console.warn(
+                `以下商品源请求失败: ${productPool.summary.failedSources.join(', ')}，商品池可能不完整`
+              )
             }
 
             if (options.productId) {
               // --product-id without --product-title: try to resolve title from pool
-              selectionMode = 'manual'
               const matchedProduct = productPool.products.find(
                 (product) => product.id === options.productId
               )
@@ -171,7 +158,6 @@ export function register(cli: CAC): void {
                 console.error('TTS 完整发布流程失败: 当前商品池为空，无法选择商品')
                 process.exit(1)
               }
-              selectionMode = 'interactive'
               console.log('2/4 请选择要挂车的商品...')
               selectedProduct = await promptForProductSelection(productPool.products)
             } else {
@@ -204,22 +190,15 @@ export function register(cli: CAC): void {
           )
 
           if (publishResult.productTitle !== selectedProduct.title) {
-            warnings.push({
-              code: 'PRODUCT_TITLE_TRUNCATED',
-              message: '商品标题超过 29 字符，发布时已自动截断',
-            })
+            console.warn('商品标题超过 29 字符，发布时已自动截断')
           }
 
-          const result: TTSWorkflowResult = {
-            flowType: 'tts',
-            productQuery: productPoolSummary ?? buildSkippedProductQuerySummary(productType as ProductType, pageSize),
-            selectedProduct: buildSelectedProductSummary(selectedProduct, selectionMode),
+          printResult({
+            products: queriedProducts,
+            selectedProduct,
             upload,
             publish: publishResult.publish,
-            warnings,
-          }
-
-          printResult(result)
+          })
         } catch (err) {
           rethrowIfProcessExit(err)
           console.error('TTS 完整发布流程失败:', (err as Error).message)

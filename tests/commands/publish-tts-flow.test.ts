@@ -5,7 +5,6 @@ const {
   printResult,
   fetchProductPool,
   sortProductsForSelection,
-  buildSelectedProductSummary,
   promptForProductSelection,
   uploadTtsVideo,
   publishTtsVideo,
@@ -13,7 +12,6 @@ const {
   printResult: vi.fn(),
   fetchProductPool: vi.fn(),
   sortProductsForSelection: vi.fn(),
-  buildSelectedProductSummary: vi.fn(),
   promptForProductSelection: vi.fn(),
   uploadTtsVideo: vi.fn(),
   publishTtsVideo: vi.fn(),
@@ -26,7 +24,6 @@ vi.mock('../../src/client/index.js', () => ({
 vi.mock('../../src/workflows/index.js', () => ({
   fetchProductPool,
   sortProductsForSelection,
-  buildSelectedProductSummary,
   promptForProductSelection,
   uploadTtsVideo,
   publishTtsVideo,
@@ -76,6 +73,7 @@ describe('publish-tts-flow command', () => {
   it('fails when fetched product pool is empty', async () => {
     fetchProductPool.mockResolvedValueOnce({
       products: [],
+      rawGroups: [],
       summary: {
         productType: 'all',
         pageSize: 20,
@@ -115,6 +113,13 @@ describe('publish-tts-flow command', () => {
 
     fetchProductPool.mockResolvedValueOnce({
       products: [selectedProduct],
+      rawGroups: [
+        {
+          productType: 'shop',
+          nextPageToken: null,
+          products: [selectedProduct],
+        },
+      ],
       summary: {
         productType: 'all',
         pageSize: 20,
@@ -126,16 +131,6 @@ describe('publish-tts-flow command', () => {
       },
     })
     sortProductsForSelection.mockReturnValueOnce([selectedProduct])
-    buildSelectedProductSummary.mockReturnValueOnce({
-      selectionMode: 'automatic',
-      id: 'product-1',
-      title: 'Top product',
-      salesCount: 100,
-      source: 'shop',
-      price: 99,
-      brandName: 'Brand',
-      shopName: 'Shop',
-    })
     uploadTtsVideo.mockResolvedValueOnce({ videoFileId: 'file-1' })
     publishTtsVideo.mockResolvedValueOnce({
       publish: { videoId: 'video-1' },
@@ -164,29 +159,16 @@ describe('publish-tts-flow command', () => {
       'caption'
     )
     expect(printResult).toHaveBeenCalledWith({
-      flowType: 'tts',
-      productQuery: {
-        productType: 'all',
-        pageSize: 20,
-        pagesScanned: 1,
-        productCount: 1,
-        nextCursor: null,
-        reachedPageLimit: false,
-        failedSources: [],
-      },
-      selectedProduct: {
-        selectionMode: 'automatic',
-        id: 'product-1',
-        title: 'Top product',
-        salesCount: 100,
-        source: 'shop',
-        price: 99,
-        brandName: 'Brand',
-        shopName: 'Shop',
-      },
+      products: [
+        {
+          productType: 'shop',
+          nextPageToken: null,
+          products: [selectedProduct],
+        },
+      ],
+      selectedProduct,
       upload: { videoFileId: 'file-1' },
       publish: { videoId: 'video-1' },
-      warnings: [],
     })
   })
 
@@ -206,6 +188,13 @@ describe('publish-tts-flow command', () => {
 
     fetchProductPool.mockResolvedValueOnce({
       products: [product],
+      rawGroups: [
+        {
+          productType: 'showcase',
+          nextPageToken: null,
+          products: [product],
+        },
+      ],
       summary: {
         productType: 'all',
         pageSize: 20,
@@ -217,16 +206,6 @@ describe('publish-tts-flow command', () => {
       },
     })
     promptForProductSelection.mockResolvedValueOnce(product)
-    buildSelectedProductSummary.mockReturnValueOnce({
-      selectionMode: 'interactive',
-      id: 'product-2',
-      title: 'Interactive product',
-      salesCount: 80,
-      source: 'showcase',
-      price: 50,
-      brandName: 'Brand',
-      shopName: 'Shop',
-    })
     uploadTtsVideo.mockResolvedValueOnce({ videoFileId: 'file-2' })
     publishTtsVideo.mockResolvedValueOnce({
       publish: { videoId: 'video-2' },
@@ -245,6 +224,17 @@ describe('publish-tts-flow command', () => {
     expect(result.errors).toEqual([])
     expect(result.exitCode).toBeUndefined()
     expect(promptForProductSelection).toHaveBeenCalledWith([product])
-    expect(printResult).toHaveBeenCalled()
+    expect(printResult).toHaveBeenCalledWith({
+      products: [
+        {
+          productType: 'showcase',
+          nextPageToken: null,
+          products: [product],
+        },
+      ],
+      selectedProduct: product,
+      upload: { videoFileId: 'file-2' },
+      publish: { videoId: 'video-2' },
+    })
   })
 })

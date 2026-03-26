@@ -49,7 +49,7 @@ describe('query-video command', () => {
     expect(result.logs).toContain('未查到视频数据')
   })
 
-  it('normalizes and prints query result', async () => {
+  it('prints api-shaped query result', async () => {
     openApiPost.mockResolvedValueOnce({
       videos: [
         {
@@ -79,27 +79,44 @@ describe('query-video command', () => {
     expect(printResult).toHaveBeenCalledWith({
       videos: [
         {
+          item_id: 'item-1',
+          video_views: 100,
+          likes: 8,
+          comments: 2,
+          shares: 1,
+          share_url: 'https://tiktok.com/item-1',
+        },
+      ],
+    })
+  })
+
+  it('accepts repeated --item-ids options as an array', async () => {
+    openApiPost.mockResolvedValueOnce({
+      videos: [
+        {
           itemId: 'item-1',
           videoViews: 100,
           likes: 8,
           comments: 2,
           shares: 1,
-          thumbnailUrl: '',
-          shareUrl: 'https://tiktok.com/item-1',
         },
       ],
-      _raw: {
-        videos: [
-          {
-            item_id: 'item-1',
-            video_views: 100,
-            likes: 8,
-            comments: 2,
-            shares: 1,
-            share_url: 'https://tiktok.com/item-1',
-          },
-        ],
-      },
+    })
+
+    const result = await runCommand(register, [
+      'query-video',
+      '--business-id',
+      'biz-1',
+      '--item-ids',
+      'item-1',
+      '--item-ids',
+      'item-2,item-3',
+    ])
+
+    expect(result.exitCode).toBeUndefined()
+    expect(openApiPost).toHaveBeenCalledWith('/api/v1/open/tiktok/video/query', {
+      businessId: 'biz-1',
+      itemIds: ['item-1', 'item-2', 'item-3'],
     })
   })
 })

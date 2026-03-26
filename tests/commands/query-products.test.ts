@@ -60,9 +60,10 @@ describe('query-products command', () => {
     expect(result.errors).toContain('查询商品失败: 所有商品源都请求失败')
   })
 
-  it('merges products and emits next cursor', async () => {
+  it('prints api-shaped product groups', async () => {
     openApiPost
       .mockResolvedValueOnce({
+        productType: 'shop',
         nextPageToken: 'shop-next',
         products: [
           {
@@ -76,6 +77,7 @@ describe('query-products command', () => {
         ],
       })
       .mockResolvedValueOnce({
+        productType: 'showcase',
         nextPageToken: '',
         products: [
           {
@@ -105,41 +107,46 @@ describe('query-products command', () => {
       '20',
     ])
 
-    const nextCursor = Buffer.from(
-      JSON.stringify({ shopToken: 'shop-next', showcaseToken: '' })
-    ).toString('base64')
-
     expect(result.exitCode).toBeUndefined()
     expect(openApiPost).toHaveBeenCalledTimes(2)
-    expect(printResult).toHaveBeenCalledWith({
-      products: [
-        {
-          id: 'p-1',
-          title: 'Shop product',
-          price: undefined,
-          images: ['https://img.example.com/shop.jpg'],
-          salesCount: 10,
-          brandName: 'Brand A',
-          shopName: 'Shop A',
-          source: 'shop',
-          reviewStatus: undefined,
-          inventoryStatus: undefined,
-        },
-        {
-          id: 'p-2',
-          title: 'Showcase product',
-          price: undefined,
-          images: ['https://img.example.com/showcase.jpg'],
-          salesCount: 20,
-          brandName: 'Brand C',
-          shopName: 'Shop C',
-          source: 'showcase',
-          reviewStatus: undefined,
-          inventoryStatus: undefined,
-        },
-      ],
-      nextCursor,
-    })
+    expect(printResult).toHaveBeenCalledWith([
+      {
+        productType: 'shop',
+        nextPageToken: 'shop-next',
+        products: [
+          {
+            id: 'p-1',
+            title: 'Shop product',
+            images: ['{url=https://img.example.com/shop.jpg}'],
+            salesCount: 10,
+            brandName: 'Brand A',
+            shopName: 'Shop A',
+          },
+        ],
+      },
+      {
+        productType: 'showcase',
+        nextPageToken: '',
+        products: [
+          {
+            id: 'p-1',
+            title: 'Duplicate product',
+            images: ['https://img.example.com/duplicate.jpg'],
+            salesCount: 99,
+            brandName: 'Brand B',
+            shopName: 'Shop B',
+          },
+          {
+            id: 'p-2',
+            title: 'Showcase product',
+            images: ['https://img.example.com/showcase.jpg'],
+            salesCount: 20,
+            brandName: 'Brand C',
+            shopName: 'Shop C',
+          },
+        ],
+      },
+    ])
   })
 
   it('preserves null tokens in cursor and skips exhausted sources', async () => {
@@ -148,6 +155,7 @@ describe('query-products command', () => {
     ).toString('base64')
 
     openApiPost.mockResolvedValueOnce({
+      productType: 'showcase',
       nextPageToken: null,
       products: [
         {
@@ -177,22 +185,21 @@ describe('query-products command', () => {
       pageSize: 20,
       pageToken: 'showcase-next',
     })
-    expect(printResult).toHaveBeenCalledWith({
-      products: [
-        {
-          id: 'p-3',
-          title: 'Showcase next page',
-          price: undefined,
-          images: ['https://img.example.com/showcase-next.jpg'],
-          salesCount: 30,
-          brandName: 'Brand D',
-          shopName: 'Shop D',
-          source: 'showcase',
-          reviewStatus: undefined,
-          inventoryStatus: undefined,
-        },
-      ],
-      nextCursor: null,
-    })
+    expect(printResult).toHaveBeenCalledWith([
+      {
+        productType: 'showcase',
+        nextPageToken: null,
+        products: [
+          {
+            id: 'p-3',
+            title: 'Showcase next page',
+            images: ['https://img.example.com/showcase-next.jpg'],
+            salesCount: 30,
+            brandName: 'Brand D',
+            shopName: 'Shop D',
+          },
+        ],
+      },
+    ])
   })
 })

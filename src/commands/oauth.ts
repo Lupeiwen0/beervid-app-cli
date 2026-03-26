@@ -25,11 +25,11 @@ export function register(cli: CAC): void {
         if (type === 'tt') {
           const data = await openApiGet<TtOAuthUrlData>('/api/v1/open/thirdparty-auth/tt-url')
           console.log('TT OAuth 授权链接:')
-          printResult({ type: 'tt', url: data })
+          printResult(data)
         } else {
           const data = await openApiGet<TtsOAuthUrlData>('/api/v1/open/thirdparty-auth/tts-url')
           console.log('TTS OAuth 授权链接:')
-          printResult({ type: 'tts', url: data.crossBorderUrl })
+          printResult(data)
         }
       } catch (err) {
         rethrowIfProcessExit(err)

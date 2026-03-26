@@ -6,7 +6,6 @@ import {
   pollNormalVideoStatus,
   queryVideoWithRetry,
 } from '../workflows/index.js'
-import type { TTWorkflowResult, WorkflowWarning } from '../types/index.js'
 import { rethrowIfProcessExit } from './utils.js'
 
 function parsePositiveInt(value: string | undefined, optionName: string, defaultValue: number): number {
@@ -82,9 +81,8 @@ export function register(cli: CAC): void {
             maxPolls
           )
 
-          const warnings: WorkflowWarning[] = []
           const videoId = status.postIds[0] ?? null
-          let query: TTWorkflowResult['query'] = null
+          let query = null
 
           if (status.finalStatus === 'PUBLISH_COMPLETE' && videoId) {
             console.log('4/4 正在查询视频数据...')
@@ -95,20 +93,17 @@ export function register(cli: CAC): void {
               queryMaxAttempts
             )
             query = queryResult.query
-            warnings.push(...queryResult.warnings)
+            for (const warning of queryResult.warnings) {
+              console.warn(warning.message)
+            }
           }
 
-          const result: TTWorkflowResult = {
-            flowType: 'tt',
+          printResult({
             upload,
             publish,
-            status,
-            videoId,
+            status: status.raw,
             query,
-            warnings,
-          }
-
-          printResult(result)
+          })
 
           if (status.finalStatus === 'FAILED') {
             process.exit(1)

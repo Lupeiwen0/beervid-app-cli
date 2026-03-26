@@ -35,7 +35,7 @@ describe('get-oauth-url command', () => {
 
     expect(result.exitCode).toBeUndefined()
     expect(openApiGet).toHaveBeenCalledWith('/api/v1/open/thirdparty-auth/tt-url')
-    expect(printResult).toHaveBeenCalledWith({ type: 'tt', url: 'https://tt.example.com' })
+    expect(printResult).toHaveBeenCalledWith('https://tt.example.com')
   })
 
   it('prints TTS oauth url', async () => {
@@ -46,8 +46,7 @@ describe('get-oauth-url command', () => {
     expect(result.exitCode).toBeUndefined()
     expect(openApiGet).toHaveBeenCalledWith('/api/v1/open/thirdparty-auth/tts-url')
     expect(printResult).toHaveBeenCalledWith({
-      type: 'tts',
-      url: 'https://tts.example.com',
+      crossBorderUrl: 'https://tts.example.com',
     })
   })
 })

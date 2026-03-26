@@ -57,7 +57,7 @@ describe('publish-tt-flow command', () => {
       raw: { status: 'PUBLISH_COMPLETE' },
     })
     queryVideoWithRetry.mockResolvedValueOnce({
-      query: { attempts: 1, videos: [{ itemId: 'video-1' }], raw: {} },
+      query: { videoList: [{ itemId: 'video-1' }] },
       warnings: [],
     })
 
@@ -77,19 +77,10 @@ describe('publish-tt-flow command', () => {
     expect(pollNormalVideoStatus).toHaveBeenCalledWith('biz-1', 'share-1', 5, 60)
     expect(queryVideoWithRetry).toHaveBeenCalledWith('biz-1', 'video-1', 5, 3)
     expect(printResult).toHaveBeenCalledWith({
-      flowType: 'tt',
       upload: { fileUrl: 'https://cdn/video.mp4' },
       publish: { shareId: 'share-1' },
-      status: {
-        pollCount: 2,
-        finalStatus: 'PUBLISH_COMPLETE',
-        reason: null,
-        postIds: ['video-1'],
-        raw: { status: 'PUBLISH_COMPLETE' },
-      },
-      videoId: 'video-1',
-      query: { attempts: 1, videos: [{ itemId: 'video-1' }], raw: {} },
-      warnings: [],
+      status: { status: 'PUBLISH_COMPLETE' },
+      query: { videoList: [{ itemId: 'video-1' }] },
     })
   })
 

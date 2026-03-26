@@ -7,9 +7,9 @@ export function register(cli: CAC): void {
   cli
     .command('query-video', '查询视频统计数据')
     .option('--business-id <id>', 'TT 账号 businessId（必填）')
-    .option('--item-ids <ids>', '视频 ID，多个用逗号分隔（必填）')
+    .option('--item-ids <ids>', '视频 ID，支持重复传参或逗号分隔（必填）')
     .action(
-      async (options: { businessId?: string; itemIds?: string }) => {
+      async (options: { businessId?: string; itemIds?: string | string[] }) => {
         if (!options.businessId || !options.itemIds) {
           const missing = [
             !options.businessId && '--business-id',
@@ -22,8 +22,10 @@ export function register(cli: CAC): void {
           process.exit(1)
         }
 
-        const itemIds = options.itemIds
-          .split(',')
+        const itemIds = (Array.isArray(options.itemIds)
+          ? options.itemIds
+          : [options.itemIds])
+          .flatMap((value) => value.split(','))
           .map((id) => id.trim())
           .filter(Boolean)
 
@@ -67,7 +69,7 @@ export function register(cli: CAC): void {
             console.log('')
           }
 
-          printResult({ videos: normalized, _raw: data })
+          printResult(data)
         } catch (err) {
           rethrowIfProcessExit(err)
           console.error('查询视频数据失败:', (err as Error).message)

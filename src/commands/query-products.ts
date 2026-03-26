@@ -81,7 +81,7 @@ export function register(cli: CAC): void {
             console.log('已到最后一页')
           }
 
-          printResult({ products: productList, nextCursor: pageResult.nextCursor })
+          printResult(pageResult.rawGroups)
         } catch (err) {
           rethrowIfProcessExit(err)
           console.error('查询商品失败:', (err as Error).message)

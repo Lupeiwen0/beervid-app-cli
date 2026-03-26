@@ -13,9 +13,6 @@ import type {
   NormalizedProductItem,
   WorkflowWarning,
   TTFlowStatusResult,
-  TTFlowQueryResult,
-  ProductQuerySummary,
-  SelectedProductSummary,
 } from '../types/index.js'
 
 export {
@@ -123,7 +120,11 @@ export async function pollNormalVideoStatus(
   }
 }
 
-export function normalizeVideoQuery(data: QueryVideoData): TTFlowQueryResult {
+export function normalizeVideoQuery(data: QueryVideoData): {
+  attempts: number
+  videos: NormalizedVideoItem[]
+  raw: QueryVideoData
+} {
   const list = data.videoList ?? data.videos ?? []
   const videos: NormalizedVideoItem[] = list.map((video) => ({
     itemId: video.itemId ?? video.item_id,
@@ -147,7 +148,7 @@ export async function queryVideoWithRetry(
   itemId: string,
   intervalSec: number,
   maxAttempts: number
-): Promise<{ query: TTFlowQueryResult | null; warnings: WorkflowWarning[] }> {
+): Promise<{ query: QueryVideoData | null; warnings: WorkflowWarning[] }> {
   const warnings: WorkflowWarning[] = []
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -155,11 +156,10 @@ export async function queryVideoWithRetry(
       businessId,
       itemIds: [itemId],
     })
-    const normalized = normalizeVideoQuery(data)
-    normalized.attempts = attempt
+    const list = data.videoList ?? data.videos ?? []
 
-    if (normalized.videos.length > 0) {
-      return { query: normalized, warnings }
+    if (list.length > 0) {
+      return { query: data, warnings }
     }
 
     if (attempt < maxAttempts) {
@@ -201,7 +201,13 @@ export async function queryProductsPage(
   productType: ProductType,
   pageSize: number,
   cursor: ProductCursor
-): Promise<{ products: NormalizedProductItem[]; nextCursor: string | null; successCount: number; failedSources: string[] }> {
+): Promise<{
+  products: NormalizedProductItem[]
+  rawGroups: ProductPageData[]
+  nextCursor: string | null
+  successCount: number
+  failedSources: string[]
+}> {
   const allTypesToQuery = productType === 'all' ? ['shop', 'showcase'] : [productType]
   // Skip sources whose token is null — they already reached the last page
   const typesToQuery = allTypesToQuery.filter((type) => {
@@ -209,6 +215,7 @@ export async function queryProductsPage(
     return token !== null
   })
   const allProducts = new Map<string, NormalizedProductItem>()
+  const rawGroups: ProductPageData[] = []
   let nextShopToken: string | null = cursor.shopToken
   let nextShowcaseToken: string | null = cursor.showcaseToken
   let successCount = 0
@@ -240,6 +247,7 @@ export async function queryProductsPage(
     successCount += 1
     const { data } = result.value
     const groups = Array.isArray(data) ? data : [data]
+    rawGroups.push(...groups)
 
     for (const group of groups) {
       // Preserve null — it means "this source has no more pages"
@@ -270,6 +278,7 @@ export async function queryProductsPage(
 
   return {
     products: Array.from(allProducts.values()),
+    rawGroups,
     nextCursor,
     successCount,
     failedSources,
@@ -281,8 +290,21 @@ export async function fetchProductPool(
   productType: ProductType,
   pageSize: number,
   maxPages: number
-): Promise<{ products: NormalizedProductItem[]; summary: ProductQuerySummary }> {
+): Promise<{
+  products: NormalizedProductItem[]
+  rawGroups: ProductPageData[]
+  summary: {
+    productType: ProductType
+    pageSize: number
+    pagesScanned: number
+    productCount: number
+    nextCursor: string | null
+    reachedPageLimit: boolean
+    failedSources: string[]
+  }
+}> {
   const allProducts = new Map<string, NormalizedProductItem>()
+  const rawGroups: ProductPageData[] = []
   let cursor: ProductCursor = { shopToken: '', showcaseToken: '' } // empty string = first page
   let nextCursor: string | null = null
   let pagesScanned = 0
@@ -299,6 +321,7 @@ export async function fetchProductPool(
     }
 
     pagesScanned = page
+    rawGroups.push(...pageResult.rawGroups)
     for (const product of pageResult.products) {
       if (!allProducts.has(product.id)) {
         allProducts.set(product.id, product)
@@ -315,6 +338,7 @@ export async function fetchProductPool(
 
   return {
     products: Array.from(allProducts.values()),
+    rawGroups,
     summary: {
       productType,
       pageSize,
@@ -324,21 +348,6 @@ export async function fetchProductPool(
       reachedPageLimit: Boolean(nextCursor) && pagesScanned >= maxPages,
       failedSources: Array.from(failedSourcesSet),
     },
-  }
-}
-
-export function buildSkippedProductQuerySummary(
-  productType: ProductType,
-  pageSize: number
-): ProductQuerySummary {
-  return {
-    productType,
-    pageSize,
-    pagesScanned: 0,
-    productCount: 0,
-    nextCursor: null,
-    reachedPageLimit: false,
-    failedSources: [],
   }
 }
 
@@ -352,22 +361,6 @@ export function sortProductsForSelection(
   products: NormalizedProductItem[]
 ): NormalizedProductItem[] {
   return products.filter(isProductPublishable).sort((a, b) => b.salesCount - a.salesCount)
-}
-
-export function buildSelectedProductSummary(
-  product: NormalizedProductItem,
-  selectionMode: SelectedProductSummary['selectionMode']
-): SelectedProductSummary {
-  return {
-    selectionMode,
-    id: product.id,
-    title: product.title,
-    salesCount: product.salesCount,
-    source: product.source,
-    price: product.price,
-    brandName: product.brandName,
-    shopName: product.shopName,
-  }
 }
 
 export async function promptForProductSelection(
