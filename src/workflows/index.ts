@@ -215,12 +215,13 @@ async function queryProductsPage(
   productType: ProductType,
   pageSize: number,
   cursor: ProductCursor
-): Promise<{ products: NormalizedProductItem[]; nextCursor: string | null; successCount: number }> {
+): Promise<{ products: NormalizedProductItem[]; nextCursor: string | null; successCount: number; failedSources: string[] }> {
   const typesToQuery = productType === 'all' ? ['shop', 'showcase'] : [productType]
   const allProducts = new Map<string, NormalizedProductItem>()
   let nextShopToken = ''
   let nextShowcaseToken = ''
   let successCount = 0
+  const failedSources: string[] = []
 
   const results = await Promise.allSettled(
     typesToQuery.map(async (type) => {
@@ -241,6 +242,7 @@ async function queryProductsPage(
 
     if (result.status === 'rejected') {
       console.warn(`Failed to query products for type "${type}":`, result.reason)
+      failedSources.push(type)
       continue
     }
 
@@ -280,6 +282,7 @@ async function queryProductsPage(
     products: Array.from(allProducts.values()),
     nextCursor,
     successCount,
+    failedSources,
   }
 }
 
@@ -293,11 +296,16 @@ export async function fetchProductPool(
   let cursor: ProductCursor = { shopToken: '', showcaseToken: '' }
   let nextCursor: string | null = null
   let pagesScanned = 0
+  const failedSourcesSet = new Set<string>()
 
   for (let page = 1; page <= maxPages; page++) {
     const pageResult = await queryProductsPage(creatorId, productType, pageSize, cursor)
     if (pageResult.successCount === 0) {
       throw new Error('所有商品源都请求失败')
+    }
+
+    for (const src of pageResult.failedSources) {
+      failedSourcesSet.add(src)
     }
 
     pagesScanned = page
@@ -324,6 +332,7 @@ export async function fetchProductPool(
       productCount: allProducts.size,
       nextCursor,
       reachedPageLimit: Boolean(nextCursor) && pagesScanned >= maxPages,
+      failedSources: Array.from(failedSourcesSet),
     },
   }
 }

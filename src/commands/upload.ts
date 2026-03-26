@@ -1,6 +1,7 @@
 import type { CAC } from 'cac'
 import { openApiPost, openApiUpload, resolveFileInput, printResult } from '../client/index.js'
 import type { UploadTokenData, NormalUploadResult, TtsUploadResult } from '../types/index.js'
+import { rethrowIfProcessExit } from './utils.js'
 
 const VALID_UPLOAD_TYPES = ['normal', 'tts']
 
@@ -85,6 +86,7 @@ export function register(cli: CAC): void {
           console.log('\n上传成功:')
           printResult(data)
         } catch (err) {
+          rethrowIfProcessExit(err)
           console.error('上传失败:', (err as Error).message)
           process.exit(1)
         }

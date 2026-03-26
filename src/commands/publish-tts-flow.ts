@@ -15,6 +15,7 @@ import type {
   WorkflowWarning,
   NormalizedProductItem,
 } from '../types/index.js'
+import { rethrowIfProcessExit } from './utils.js'
 
 const VALID_PRODUCT_TYPES = ['shop', 'showcase', 'all']
 
@@ -132,6 +133,13 @@ export function register(cli: CAC): void {
             })
           }
 
+          if (productPool.summary.failedSources.length > 0) {
+            warnings.push({
+              code: 'PRODUCT_SOURCE_PARTIAL_FAILURE',
+              message: `以下商品源请求失败: ${productPool.summary.failedSources.join(', ')}，商品池可能不完整`,
+            })
+          }
+
           if (productPool.products.length === 0) {
             console.error('TTS 完整发布流程失败: 当前商品池为空，无法选择商品')
             process.exit(1)
@@ -198,6 +206,7 @@ export function register(cli: CAC): void {
 
           printResult(result)
         } catch (err) {
+          rethrowIfProcessExit(err)
           console.error('TTS 完整发布流程失败:', (err as Error).message)
           process.exit(1)
         }

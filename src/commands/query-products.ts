@@ -5,6 +5,7 @@ import type {
   NormalizedProductItem,
   ProductCursor,
 } from '../types/index.js'
+import { rethrowIfProcessExit } from './utils.js'
 
 const VALID_PRODUCT_TYPES = ['shop', 'showcase', 'all']
 
@@ -162,6 +163,7 @@ export function register(cli: CAC): void {
 
           printResult({ products: productList, nextCursor })
         } catch (err) {
+          rethrowIfProcessExit(err)
           console.error('查询商品失败:', (err as Error).message)
           process.exit(1)
         }

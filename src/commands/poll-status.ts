@@ -1,6 +1,7 @@
 import type { CAC } from 'cac'
 import { openApiPost, printResult } from '../client/index.js'
 import type { VideoStatusData } from '../types/index.js'
+import { rethrowIfProcessExit } from './utils.js'
 
 const TERMINAL_STATUSES = ['PUBLISH_COMPLETE', 'FAILED']
 
@@ -82,6 +83,7 @@ export function register(cli: CAC): void {
           console.error(`\n超过最大轮询次数 (${maxPolls})，状态仍未终结`)
           process.exit(2)
         } catch (err) {
+          rethrowIfProcessExit(err)
           console.error('轮询失败:', (err as Error).message)
           process.exit(1)
         }

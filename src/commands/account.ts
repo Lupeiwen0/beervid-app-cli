@@ -1,5 +1,6 @@
 import type { CAC } from 'cac'
 import { openApiPost, printResult } from '../client/index.js'
+import { rethrowIfProcessExit } from './utils.js'
 
 export function register(cli: CAC): void {
   cli
@@ -29,6 +30,7 @@ export function register(cli: CAC): void {
         })
         printResult(data)
       } catch (err) {
+        rethrowIfProcessExit(err)
         console.error('查询账号信息失败:', (err as Error).message)
         process.exit(1)
       }

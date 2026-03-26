@@ -7,6 +7,7 @@ import {
   queryVideoWithRetry,
 } from '../workflows/index.js'
 import type { TTWorkflowResult, WorkflowWarning } from '../types/index.js'
+import { rethrowIfProcessExit } from './utils.js'
 
 function parsePositiveInt(value: string | undefined, optionName: string, defaultValue: number): number {
   const parsed = parseInt(value ?? `${defaultValue}`, 10)
@@ -122,6 +123,7 @@ export function register(cli: CAC): void {
           }
           process.exit(0)
         } catch (err) {
+          rethrowIfProcessExit(err)
           console.error('TT 完整发布流程失败:', (err as Error).message)
           process.exit(1)
         }

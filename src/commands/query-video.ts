@@ -1,6 +1,7 @@
 import type { CAC } from 'cac'
 import { openApiPost, printResult } from '../client/index.js'
 import type { QueryVideoData, NormalizedVideoItem } from '../types/index.js'
+import { rethrowIfProcessExit } from './utils.js'
 
 export function register(cli: CAC): void {
   cli
@@ -68,6 +69,7 @@ export function register(cli: CAC): void {
 
           printResult({ videos: normalized, _raw: data })
         } catch (err) {
+          rethrowIfProcessExit(err)
           console.error('查询视频数据失败:', (err as Error).message)
           process.exit(1)
         }

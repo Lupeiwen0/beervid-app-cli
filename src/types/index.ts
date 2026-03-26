@@ -34,9 +34,7 @@ export type VideoStatus = 'PROCESSING_DOWNLOAD' | 'PUBLISH_COMPLETE' | 'FAILED' 
 
 // ─── OAuth ────────────────────────────────────────────────────────────────────
 
-export interface TtOAuthUrlData {
-  url: string
-}
+export type TtOAuthUrlData = string
 
 export interface TtsOAuthUrlData {
   crossBorderUrl: string
@@ -195,6 +193,7 @@ export interface ProductQuerySummary {
   productCount: number
   nextCursor: string | null
   reachedPageLimit: boolean
+  failedSources: string[]
 }
 
 export interface SelectedProductSummary {

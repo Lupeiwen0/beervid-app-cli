@@ -1,6 +1,7 @@
 import type { CAC } from 'cac'
 import { openApiGet, printResult } from '../client/index.js'
 import type { TtOAuthUrlData, TtsOAuthUrlData } from '../types/index.js'
+import { rethrowIfProcessExit } from './utils.js'
 
 export function register(cli: CAC): void {
   cli
@@ -24,13 +25,14 @@ export function register(cli: CAC): void {
         if (type === 'tt') {
           const data = await openApiGet<TtOAuthUrlData>('/api/v1/open/thirdparty-auth/tt-url')
           console.log('TT OAuth 授权链接:')
-          printResult({ type: 'tt', url: data.url })
+          printResult({ type: 'tt', url: data })
         } else {
           const data = await openApiGet<TtsOAuthUrlData>('/api/v1/open/thirdparty-auth/tts-url')
           console.log('TTS OAuth 授权链接:')
           printResult({ type: 'tts', url: data.crossBorderUrl })
         }
       } catch (err) {
+        rethrowIfProcessExit(err)
         console.error('获取 OAuth URL 失败:', (err as Error).message)
         process.exit(1)
       }

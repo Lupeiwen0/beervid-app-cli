@@ -1,6 +1,7 @@
 import type { CAC } from 'cac'
 import { openApiPost, printResult } from '../client/index.js'
 import type { NormalPublishResult, ShoppablePublishResult } from '../types/index.js'
+import { rethrowIfProcessExit } from './utils.js'
 
 const MAX_PRODUCT_TITLE_LENGTH = 29
 const VALID_PUBLISH_TYPES = ['normal', 'shoppable']
@@ -14,7 +15,9 @@ export function register(cli: CAC): void {
     .option('--creator-id <id>', 'TTS 账号 creatorUserOpenId（挂车发布必填）')
     .option('--file-id <id>', '上传返回的 videoFileId（挂车发布必填）')
     .option('--product-id <id>', '商品 ID（挂车发布必填）')
-    .option('--product-title <title>', '商品标题，最多 29 字符（挂车发布必填）')
+    .option('--product-title <title>', '商品标题，最多 29 字符（挂车发布必填）', {
+      type: [String],
+    })
     .option('--caption <text>', '视频描述/文案（可选）')
     .action(
       async (options: {
@@ -52,8 +55,9 @@ export function register(cli: CAC): void {
               process.exit(1)
             }
 
-            const productTitle = options.productTitle!.slice(0, MAX_PRODUCT_TITLE_LENGTH)
-            if (options.productTitle!.length > MAX_PRODUCT_TITLE_LENGTH) {
+            const rawProductTitle = String(options.productTitle)
+            const productTitle = rawProductTitle.slice(0, MAX_PRODUCT_TITLE_LENGTH)
+            if (rawProductTitle.length > MAX_PRODUCT_TITLE_LENGTH) {
               console.log(
                 `注意: productTitle 超过 ${MAX_PRODUCT_TITLE_LENGTH} 字符，已自动截断为: "${productTitle}"`
               )
@@ -104,6 +108,7 @@ export function register(cli: CAC): void {
 
           printResult(data)
         } catch (err) {
+          rethrowIfProcessExit(err)
           console.error('发布失败:', (err as Error).message)
           process.exit(1)
         }
