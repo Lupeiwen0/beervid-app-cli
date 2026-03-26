@@ -1,0 +1,44 @@
+{
+  "name": "beervid-app-cli",
+  "version": "0.2.1",
+  "description": "BEERVID App CLI — TikTok video publish, account auth, and data query",
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "bin": {
+    "beervid": "dist/cli.mjs"
+  },
+  "files": [
+    "dist/",
+    "agents/",
+    "references/",
+    "SKILL.md",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsx src/cli.ts",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "cac": "^6.7.14"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "tsup": "^8.5.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^4.1.1"
+  },
+  "keywords": [
+    "beervid",
+    "tiktok",
+    "cli",
+    "video",
+    "open-api"
+  ],
+  "license": "MIT"
+}
