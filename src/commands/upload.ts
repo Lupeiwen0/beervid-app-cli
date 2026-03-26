@@ -1,6 +1,7 @@
 import type { CAC } from 'cac'
-import { openApiPost, openApiUpload, resolveFileInput, printResult } from '../client/index.js'
-import type { UploadTokenData, NormalUploadResult, TtsUploadResult } from '../types/index.js'
+import { printResult } from '../client/index.js'
+import { uploadNormalVideo, uploadTtsVideo } from '../utils/upload.js'
+import type { NormalUploadResult, TtsUploadResult } from '../types/index.js'
 import { rethrowIfProcessExit } from './utils.js'
 
 const VALID_UPLOAD_TYPES = ['normal', 'tts']
@@ -39,48 +40,14 @@ export function register(cli: CAC): void {
         }
 
         try {
-          // 1. 获取上传凭证
-          let uploadToken = options.token
-
-          if (!uploadToken) {
-            console.log('正在获取上传凭证...')
-            const tokenData = await openApiPost<UploadTokenData>(
-              '/api/v1/open/upload-token/generate'
-            )
-            uploadToken = tokenData.uploadToken
-            console.log(`上传凭证获取成功，有效期 ${tokenData.expiresIn} 秒`)
-          }
-
-          // 2. 解析文件入参
-          console.log(`正在处理文件: ${options.file}`)
-          const file = await resolveFileInput(options.file)
-          console.log(`文件就绪: ${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)`)
-
-          // 3. 构建 FormData
-          const formData = new FormData()
-          formData.append('file', file)
-
-          const auth = { headerName: 'X-UPLOAD-TOKEN', headerValue: uploadToken }
-
-          // 4. 执行上传
           let data: NormalUploadResult | TtsUploadResult
 
           if (uploadType === 'tts') {
             console.log(`TTS 上传模式，creatorUserOpenId: ${options.creatorId!}`)
-            data = await openApiUpload<TtsUploadResult>(
-              '/api/v1/open/file-upload/tts-video',
-              formData,
-              { creatorUserOpenId: options.creatorId! },
-              auth
-            )
+            data = await uploadTtsVideo(options.file, options.creatorId!, options.token)
           } else {
             console.log('普通上传模式')
-            data = await openApiUpload<NormalUploadResult>(
-              '/api/v1/open/file-upload',
-              formData,
-              undefined,
-              auth
-            )
+            data = await uploadNormalVideo(options.file, options.token)
           }
 
           console.log('\n上传成功:')
