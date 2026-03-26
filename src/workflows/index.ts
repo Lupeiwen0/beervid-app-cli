@@ -25,7 +25,6 @@ export {
 } from '../utils/upload.js'
 
 const MAX_PRODUCT_TITLE_LENGTH = 29
-const TERMINAL_STATUSES = ['PUBLISH_COMPLETE', 'FAILED']
 
 export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -71,22 +70,41 @@ export async function pollNormalVideoStatus(
   intervalSec: number,
   maxPolls: number
 ): Promise<TTFlowStatusResult> {
+  let lastData: VideoStatusData | null = null
+  let lastStatus = 'UNKNOWN'
+
   for (let i = 1; i <= maxPolls; i++) {
     const data = await openApiPost<VideoStatusData>('/api/v1/open/tiktok/video/status', {
       businessId,
       shareId,
     })
 
+    lastData = data
     const status = data.status ?? data.Status ?? 'UNKNOWN'
-    if (TERMINAL_STATUSES.includes(status)) {
+    const postIds = data.post_ids ?? []
+    lastStatus = status
+
+    if (status === 'FAILED') {
       return {
         pollCount: i,
         finalStatus: status,
         reason: data.reason ?? null,
-        postIds: data.post_ids ?? [],
+        postIds,
         raw: data,
       }
     }
+
+    if (status === 'PUBLISH_COMPLETE' && postIds.length > 0) {
+      return {
+        pollCount: i,
+        finalStatus: status,
+        reason: data.reason ?? null,
+        postIds,
+        raw: data,
+      }
+    }
+
+    // PUBLISH_COMPLETE but no post_ids yet — keep polling
 
     if (i < maxPolls) {
       await sleep(intervalSec * 1000)
@@ -96,9 +114,12 @@ export async function pollNormalVideoStatus(
   return {
     pollCount: maxPolls,
     finalStatus: 'TIMEOUT',
-    reason: `超过最大轮询次数 (${maxPolls})，状态仍未终结`,
+    reason:
+      lastStatus === 'PUBLISH_COMPLETE'
+        ? `超过最大轮询次数 (${maxPolls})，状态为 PUBLISH_COMPLETE 但 post_ids 仍为空`
+        : `超过最大轮询次数 (${maxPolls})，仍未拿到 post_ids`,
     postIds: [],
-    raw: null,
+    raw: lastData,
   }
 }
 

@@ -3,8 +3,6 @@ import { openApiPost, printResult } from '../client/index.js'
 import type { VideoStatusData } from '../types/index.js'
 import { rethrowIfProcessExit } from './utils.js'
 
-const TERMINAL_STATUSES = ['PUBLISH_COMPLETE', 'FAILED']
-
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
@@ -14,7 +12,7 @@ export function register(cli: CAC): void {
     .command('poll-status', '轮询普通视频发布状态')
     .option('--business-id <id>', 'TT 账号 businessId（必填）')
     .option('--share-id <id>', '发布时返回的 shareId（必填）')
-    .option('--interval <sec>', '轮询间隔秒数（默认 3）')
+    .option('--interval <sec>', '轮询间隔秒数（默认 5）')
     .option('--max-polls <n>', '最大轮询次数（默认 60）')
     .action(
       async (options: {
@@ -33,7 +31,7 @@ export function register(cli: CAC): void {
           process.exit(1)
         }
 
-        const intervalSec = parseInt(options.interval ?? '3', 10)
+        const intervalSec = parseInt(options.interval ?? '5', 10)
         const maxPolls = parseInt(options.maxPolls ?? '60', 10)
         if (Number.isNaN(intervalSec) || intervalSec <= 0) {
           console.error('错误: --interval 必须为大于 0 的整数')
@@ -49,6 +47,8 @@ export function register(cli: CAC): void {
           console.log(`businessId: ${options.businessId}`)
           console.log(`shareId: ${options.shareId}\n`)
 
+          let lastStatus = 'UNKNOWN'
+
           for (let i = 1; i <= maxPolls; i++) {
             const data = await openApiPost<VideoStatusData>('/api/v1/open/tiktok/video/status', {
               businessId: options.businessId,
@@ -56,23 +56,26 @@ export function register(cli: CAC): void {
             })
 
             const status = data.status ?? data.Status ?? 'UNKNOWN'
+            const postIds = data.post_ids ?? []
+            lastStatus = status
             console.log(`[${i}/${maxPolls}] 状态: ${status}`)
 
-            if (TERMINAL_STATUSES.includes(status as string)) {
+            if (status === 'FAILED') {
               console.log('')
-              if (status === 'PUBLISH_COMPLETE') {
-                console.log('发布成功!')
-                if (data.post_ids && data.post_ids.length > 0) {
-                  console.log(`视频 ID: ${data.post_ids[0]}`)
-                  console.log(
-                    `提示: 使用 beervid query-video --business-id ${options.businessId} --item-ids ${data.post_ids[0]} 查询数据`
-                  )
-                }
-              } else {
-                console.log(`发布失败: ${data.reason ?? '未知原因'}`)
-              }
+              console.log(`发布失败: ${data.reason ?? '未知原因'}`)
               printResult(data)
-              process.exit(status === 'PUBLISH_COMPLETE' ? 0 : 1)
+              process.exit(1)
+            }
+
+            if (status === 'PUBLISH_COMPLETE' && postIds.length > 0) {
+              console.log('')
+              console.log('发布成功!')
+              console.log(`视频 ID: ${postIds[0]}`)
+              console.log(
+                `提示: 使用 beervid query-video --business-id ${options.businessId} --item-ids ${postIds[0]} 查询数据`
+              )
+              printResult(data)
+              process.exit(0)
             }
 
             if (i < maxPolls) {
@@ -80,7 +83,11 @@ export function register(cli: CAC): void {
             }
           }
 
-          console.error(`\n超过最大轮询次数 (${maxPolls})，状态仍未终结`)
+          if (lastStatus === 'PUBLISH_COMPLETE') {
+            console.error(`\n超过最大轮询次数 (${maxPolls})，状态为 PUBLISH_COMPLETE 但 post_ids 仍为空`)
+          } else {
+            console.error(`\n超过最大轮询次数 (${maxPolls})，仍未拿到 post_ids`)
+          }
           process.exit(2)
         } catch (err) {
           rethrowIfProcessExit(err)

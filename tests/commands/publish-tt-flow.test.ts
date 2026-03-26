@@ -74,7 +74,7 @@ describe('publish-tt-flow command', () => {
     expect(result.exitCode).toBe(0)
     expect(uploadNormalVideo).toHaveBeenCalledWith('/tmp/video.mp4', undefined)
     expect(publishNormalVideo).toHaveBeenCalledWith('biz-1', 'https://cdn/video.mp4', 'hello')
-    expect(pollNormalVideoStatus).toHaveBeenCalledWith('biz-1', 'share-1', 3, 60)
+    expect(pollNormalVideoStatus).toHaveBeenCalledWith('biz-1', 'share-1', 5, 60)
     expect(queryVideoWithRetry).toHaveBeenCalledWith('biz-1', 'video-1', 5, 3)
     expect(printResult).toHaveBeenCalledWith({
       flowType: 'tt',

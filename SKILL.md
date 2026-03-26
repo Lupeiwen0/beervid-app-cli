@@ -5,12 +5,10 @@ description: >
   不同于 BEERVID 自身应用内部的 API。当用户需要以第三方应用身份调用 BEERVID 平台接口、开发 TikTok 视频发布/上传/数据统计功能、
   处理 TT/TTS 账号授权绑定、查询商品列表、或涉及 openApiGet/openApiPost/openApiUpload 相关代码时，使用此 skill。
   包括：账号 OAuth 授权、视频上传与发布（普通/挂车）、发布状态轮询、视频数据查询、TTS 商品查询等完整业务流程。
-  即使用户只是提到"发布视频"、"绑定账号"、"查询视频数据"、"挂车发布"、"第三方应用"、"APP_KEY"等关键词，也应触发此 skill。
+  当用户在 BEERVID 项目上下文中提到"发布视频"、"绑定账号"、"查询视频数据"、"挂车发布"、"BEERVID 第三方应用"、"BEERVID_APP_KEY"等关键词时，应触发此 skill。
 ---
 
 # BEERVID 第三方应用 Open API 集成开发指南
-
-> **版本:** `0.1.0` &nbsp;|&nbsp; **Node.js:** `>=20.0.0`
 
 本 skill 专用于 **BEERVID 面向第三方应用开放的 Open API**，覆盖 6 大能力模块。
 
@@ -18,7 +16,7 @@ description: >
 >
 > - **第三方应用 Open API（本 skill）**：面向外部开发者，通过 `BEERVID_APP_KEY` 认证，API 路径前缀 `/api/v1/open/`，用于第三方应用集成 TikTok 视频发布、账号管理等能力。
 > - **BEERVID 内部 API**：BEERVID 自身产品使用的接口，认证方式和接口设计不同，不在本 skill 覆盖范围内。
->   详细的请求/响应示例和错误码说明见 `references/api-reference.md`。
+>   详细的请求/响应示例和错误码说明见 [`references/api-reference.md`](./references/api-reference.md)。
 
 ## 环境配置
 
@@ -149,7 +147,7 @@ async function openApiUpload<T>(
 **状态流转：**
 
 ```
-PROCESSING_DOWNLOAD → PUBLISH_COMPLETE（成功，携带 post_ids）
+PROCESSING_DOWNLOAD → PUBLISH_COMPLETE（仅当携带非空 post_ids 时才算完成）
                     → FAILED（失败，携带 reason）
 ```
 
@@ -264,7 +262,7 @@ OAuth 回调
   1. 获取上传凭证      POST /api/v1/open/upload-token/generate
   2. 上传视频文件      POST /api/v1/open/file-upload（返回 fileUrl）
   3. 发布视频          POST /api/v1/open/tiktok/video/publish（返回 shareId）
-  4. 轮询发布状态      POST /api/v1/open/tiktok/video/status（直到 PUBLISH_COMPLETE）
+  4. 轮询发布状态      POST /api/v1/open/tiktok/video/status（直到 PUBLISH_COMPLETE 且返回非空 post_ids）
   5. 拉取视频数据      POST /api/v1/open/tiktok/video/query（获取播放量等）
 ```
 
@@ -285,7 +283,7 @@ OAuth 回调
   4. 发布挂车视频      POST /api/v1/open/tts/shoppable-video/publish（立即完成）
 ```
 
-详细的请求/响应示例见 → `references/api-reference.md`
+详细的请求/响应示例见 → [`references/api-reference.md`](./references/api-reference.md)
 
 ## CLI 命令
 
@@ -301,6 +299,16 @@ beervid config --app-key "your-api-key"
 export BEERVID_APP_KEY="your-api-key"
 export BEERVID_APP_BASE_URL="https://open.beervid.ai"  # 可选，有默认值
 ```
+
+> **注意：** 当参数值以 `-` 开头时（如 `businessId`、`creatorUserOpenId`），必须使用 `=` 连接选项名和值，否则 CLI 会将其误判为选项标志：
+>
+> ```bash
+> # 正确
+> beervid publish-tt-flow --business-id=-0006dmtMOdKRY...
+>
+> # 错误 — 会报 "Unknown option `-0`"
+> beervid publish-tt-flow --business-id -0006dmtMOdKRY...
+> ```
 
 ### 命令一览
 
@@ -382,7 +390,7 @@ beervid publish --type shoppable \
 #### 轮询发布状态
 
 ```bash
-# 默认每 3 秒轮询一次，最多 60 次
+# 默认每 5 秒轮询一次，最多 60 次
 beervid poll-status --business-id biz_12345 --share-id share_abc123
 
 # 自定义间隔和次数

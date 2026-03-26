@@ -59,6 +59,27 @@ describe('poll-status command', () => {
     })
   })
 
+  it('keeps polling when publish completes without post ids', async () => {
+    openApiPost.mockResolvedValueOnce({
+      status: 'PUBLISH_COMPLETE',
+      post_ids: [],
+    })
+
+    const result = await runCommand(register, [
+      'poll-status',
+      '--business-id',
+      'biz-1',
+      '--share-id',
+      'share-1',
+      '--max-polls',
+      '1',
+    ])
+
+    expect(result.exitCode).toBe(2)
+    expect(printResult).not.toHaveBeenCalled()
+    expect(result.errors.some((line) => line.includes('超过最大轮询次数'))).toBe(true)
+  })
+
   it('exits with 1 when publish fails', async () => {
     openApiPost.mockResolvedValueOnce({
       status: 'FAILED',

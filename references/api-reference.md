@@ -364,8 +364,10 @@ const { data: accountInfo } = await openApiPost<AccountInfo>(
 | 状态 | 含义 | 是否终态 |
 |------|------|---------|
 | `PROCESSING_DOWNLOAD` | 视频处理中 | 否，继续轮询 |
-| `PUBLISH_COMPLETE` | 发布成功 | 是 |
+| `PUBLISH_COMPLETE` | 发布接口已完成；当 `post_ids` 非空时可视为成功完成 | 条件成立时是 |
 | `FAILED` | 发布失败 | 是 |
+
+**注意：** 如果返回 `PUBLISH_COMPLETE` 但 `post_ids` 为空，应继续轮询，直到拿到 `post_ids` 或达到超时上限。
 
 **成功后：** `post_ids[0]` 即为 TikTok 上的视频 ID，可用于后续数据查询。
 

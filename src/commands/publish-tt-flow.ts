@@ -25,7 +25,7 @@ export function register(cli: CAC): void {
     .option('--file <path>', '视频文件路径或 URL（必填）')
     .option('--caption <text>', '视频描述/文案（可选）')
     .option('--token <token>', '已有上传凭证（可选）')
-    .option('--interval <sec>', '轮询间隔秒数（默认 3）')
+    .option('--interval <sec>', '轮询间隔秒数（默认 5）')
     .option('--max-polls <n>', '最大轮询次数（默认 60）')
     .option('--query-interval <sec>', '视频数据查询重试间隔秒数（默认 5）')
     .option('--query-max-attempts <n>', '视频数据查询最大重试次数（默认 3）')
@@ -52,7 +52,7 @@ export function register(cli: CAC): void {
           process.exit(1)
         }
 
-        const intervalSec = parsePositiveInt(options.interval, '--interval', 3)
+        const intervalSec = parsePositiveInt(options.interval, '--interval', 5)
         const maxPolls = parsePositiveInt(options.maxPolls, '--max-polls', 60)
         const queryIntervalSec = parsePositiveInt(options.queryInterval, '--query-interval', 5)
         const queryMaxAttempts = parsePositiveInt(
@@ -96,11 +96,6 @@ export function register(cli: CAC): void {
             )
             query = queryResult.query
             warnings.push(...queryResult.warnings)
-          } else if (status.finalStatus === 'PUBLISH_COMPLETE') {
-            warnings.push({
-              code: 'VIDEO_ID_MISSING',
-              message: '发布成功，但状态结果中未返回 videoId，已跳过视频数据查询',
-            })
           }
 
           const result: TTWorkflowResult = {

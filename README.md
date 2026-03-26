@@ -19,17 +19,25 @@ beervid --help
 git clone <repo-url> ~/.claude/skills/beervid-app-cli
 ```
 
-## 环境变量
+## 配置
 
 ```bash
+# 方式一：通过 config 命令持久化（推荐）
+beervid config --app-key "your-api-key"
+
+# 方式二：通过环境变量（优先级高于 config）
 export BEERVID_APP_KEY="your-api-key"
 export BEERVID_APP_BASE_URL="https://open.beervid.ai"  # 可选，有默认值
+
+# 查看当前配置
+beervid config --show
 ```
 
 ## 功能概览
 
 | 命令 | 功能 |
 |------|------|
+| `beervid config` | 设置/查看全局配置（APP_KEY、BASE_URL） |
 | `beervid get-oauth-url` | 获取 TT/TTS OAuth 授权链接 |
 | `beervid get-account-info` | 查询账号信息 |
 | `beervid upload` | 上传视频（支持本地文件和 URL） |
@@ -64,4 +72,4 @@ beervid publish-tts-flow --creator-id open_user_abc --file ./video.mp4 --interac
 beervid publish-tts-flow --creator-id open_user_abc --file ./video.mp4 --product-id prod_123 --product-title "Widget"
 ```
 
-详细用法见 [SKILL.md](./SKILL.md)。如需查看完整 API 参考，请在仓库源码中阅读 `references/api-reference.md`。
+详细用法见 [SKILL.md](./SKILL.md)。完整 API 参考见 [references/api-reference.md](./references/api-reference.md)。

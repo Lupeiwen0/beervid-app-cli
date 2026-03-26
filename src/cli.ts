@@ -1,4 +1,5 @@
 import cac from 'cac'
+import pkg from '../package.json' with { type: 'json' }
 import { register as registerOauth } from './commands/oauth.js'
 import { register as registerAccount } from './commands/account.js'
 import { register as registerUpload } from './commands/upload.js'
@@ -10,7 +11,10 @@ import { register as registerPublishTtFlow } from './commands/publish-tt-flow.js
 import { register as registerPublishTtsFlow } from './commands/publish-tts-flow.js'
 import { register as registerConfig } from './commands/config.js'
 
+declare const __PKG_VERSION__: string
+
 const cli = cac('beervid')
+const cliVersion = typeof __PKG_VERSION__ !== 'undefined' ? __PKG_VERSION__ : pkg.version
 
 registerConfig(cli)
 registerOauth(cli)
@@ -24,7 +28,7 @@ registerPublishTtFlow(cli)
 registerPublishTtsFlow(cli)
 
 cli.help()
-cli.version('1.0.0')
+cli.version(cliVersion)
 
 if (process.argv.slice(2).length === 0) {
   cli.outputHelp()
