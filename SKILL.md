@@ -291,9 +291,13 @@ OAuth 回调
 
 统一使用已安装的 `beervid` 命令；
 
-**前置条件：** 设置环境变量后即可使用：
+**前置条件：** 设置 APP_KEY 后即可使用（任选一种方式）：
 
 ```bash
+# 方式一：通过 config 命令持久化（推荐，设置一次永久生效）
+beervid config --app-key "your-api-key"
+
+# 方式二：通过环境变量（优先级高于 config）
 export BEERVID_APP_KEY="your-api-key"
 export BEERVID_APP_BASE_URL="https://open.beervid.ai"  # 可选，有默认值
 ```
@@ -302,6 +306,7 @@ export BEERVID_APP_BASE_URL="https://open.beervid.ai"  # 可选，有默认值
 
 | 命令                       | 功能                           | 核心参数                                            |
 | -------------------------- | ------------------------------ | --------------------------------------------------- |
+| `beervid config`           | 设置/查看全局配置              | `--app-key <key> [--base-url <url>] [--show]`       |
 | `beervid get-oauth-url`    | 获取 OAuth 授权链接            | `--type tt\|tts`                                    |
 | `beervid get-account-info` | 查询账号信息                   | `--type TT\|TTS --account-id <id>`                  |
 | `beervid upload`           | 上传视频（支持本地文件和 URL） | `--file <路径或URL> [--type tts --creator-id <id>]` |
@@ -313,6 +318,19 @@ export BEERVID_APP_BASE_URL="https://open.beervid.ai"  # 可选，有默认值
 | `beervid publish-tts-flow` | TTS 完整发布流程               | `--creator-id <id> --file <路径或URL>`              |
 
 ### 使用示例
+
+#### 设置全局配置
+
+```bash
+# 设置 APP_KEY（持久化到 ~/.beervid/config.json）
+beervid config --app-key k9aqh41e...
+
+# 设置自定义 API 地址
+beervid config --base-url https://custom.api.com
+
+# 查看当前配置（APP_KEY 脱敏显示）
+beervid config --show
+```
 
 #### 获取授权链接
 

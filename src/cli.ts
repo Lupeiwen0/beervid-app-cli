@@ -8,9 +8,11 @@ import { register as registerQueryVideo } from './commands/query-video.js'
 import { register as registerQueryProducts } from './commands/query-products.js'
 import { register as registerPublishTtFlow } from './commands/publish-tt-flow.js'
 import { register as registerPublishTtsFlow } from './commands/publish-tts-flow.js'
+import { register as registerConfig } from './commands/config.js'
 
 const cli = cac('beervid')
 
+registerConfig(cli)
 registerOauth(cli)
 registerAccount(cli)
 registerUpload(cli)

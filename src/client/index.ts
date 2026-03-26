@@ -1,19 +1,22 @@
 import { readFileSync, existsSync } from 'node:fs'
 import { resolve, basename } from 'node:path'
+import { loadConfig } from '../config.js'
 
 // ─── Environment ──────────────────────────────────────────────────────────────
 
 export function getApiKey(): string {
-  const key = process.env['BEERVID_APP_KEY']
+  const key = process.env['BEERVID_APP_KEY'] || loadConfig().appKey
   if (!key) {
-    console.error('错误: 请设置环境变量 BEERVID_APP_KEY')
+    console.error('错误: 请先设置 APP_KEY，任选一种方式:')
+    console.error('  1. beervid config --app-key <your-key>')
+    console.error('  2. export BEERVID_APP_KEY=<your-key>')
     process.exit(1)
   }
   return key
 }
 
 export function getBaseUrl(): string {
-  return process.env['BEERVID_APP_BASE_URL'] ?? 'https://open.beervid.ai'
+  return process.env['BEERVID_APP_BASE_URL'] || loadConfig().baseUrl || 'https://open.beervid.ai'
 }
 
 // ─── Response handling ────────────────────────────────────────────────────────
