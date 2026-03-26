@@ -235,13 +235,17 @@ async function queryProductsPage(
     })
   )
 
-  for (const result of results) {
+  for (let i = 0; i < results.length; i++) {
+    const result = results[i]
+    const type = typesToQuery[i]
+
     if (result.status === 'rejected') {
+      console.warn(`Failed to query products for type "${type}":`, result.reason)
       continue
     }
 
     successCount += 1
-    const { type, data } = result.value
+    const { data } = result.value
     const groups = Array.isArray(data) ? data : [data]
 
     for (const group of groups) {
