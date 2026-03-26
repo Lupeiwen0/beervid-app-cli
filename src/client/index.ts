@@ -1,5 +1,5 @@
 import { readFileSync, existsSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { resolve, basename } from 'node:path'
 
 // ─── Environment ──────────────────────────────────────────────────────────────
 
@@ -113,7 +113,7 @@ export function localFileToFile(filePath: string): File {
   }
 
   const buffer = readFileSync(absPath)
-  const fileName = absPath.split('/').pop() ?? 'video'
+  const fileName = basename(absPath)
   const ext = fileName.split('.').pop()?.toLowerCase()
   const mimeMap: Record<string, string> = {
     mp4: 'video/mp4',
