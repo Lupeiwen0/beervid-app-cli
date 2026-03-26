@@ -4,7 +4,7 @@
   "description": "BEERVID Open API CLI — TikTok video publish, account auth, and data query",
   "type": "module",
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   },
   "bin": {
     "beervid": "./dist/cli.mjs"
