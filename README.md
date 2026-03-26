@@ -2,13 +2,32 @@
 
 BEERVID 第三方应用 Open API 的 TypeScript CLI 和 Claude Code Skill，提供 TikTok 视频发布、账号授权、数据查询等完整能力。
 
-## 安装
+## 安装与调用
 
-### npm CLI
+### 全局安装
 
 ```bash
 npm install -g beervid-app-cli
 beervid --help
+```
+
+### npx 免安装调用
+
+```bash
+npx beervid-app-cli --help
+npx beervid-app-cli config --show
+npx beervid-app-cli upload --file ./video.mp4
+```
+
+### node 直接调用
+
+```bash
+# 克隆仓库后先构建
+npm install && npm run build
+
+# 通过 node 运行入口文件
+node dist/cli.mjs --help
+node dist/cli.mjs config --show
 ```
 
 ## 配置
