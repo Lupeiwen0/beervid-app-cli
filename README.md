@@ -11,14 +11,6 @@ npm install -g beervid-app-cli
 beervid --help
 ```
 
-### Claude Code Skill
-
-将本仓库克隆到 Claude Code 的 skills 目录：
-
-```bash
-git clone <repo-url> ~/.claude/skills/beervid-app-cli
-```
-
 ## 配置
 
 ```bash
