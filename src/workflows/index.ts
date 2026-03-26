@@ -180,28 +180,37 @@ function extractImageUrl(imageStr: string): string {
   return match?.[1]?.trim() ?? imageStr
 }
 
-function decodeCursor(cursor: string): ProductCursor {
+// Decode a base64-encoded cursor into a ProductCursor.
+// Token semantics: undefined → '' (first page), null preserved (source exhausted).
+export function decodeCursor(cursor: string): ProductCursor {
   const decoded = JSON.parse(Buffer.from(cursor, 'base64').toString()) as ProductCursor
   return {
-    shopToken: decoded.shopToken ?? '',
-    showcaseToken: decoded.showcaseToken ?? '',
+    shopToken: decoded.shopToken === undefined ? '' : decoded.shopToken,
+    showcaseToken: decoded.showcaseToken === undefined ? '' : decoded.showcaseToken,
   }
 }
 
-function encodeCursor(cursor: ProductCursor): string {
+export function encodeCursor(cursor: ProductCursor): string | null {
+  // Both null means all sources exhausted — no next page
+  if (cursor.shopToken === null && cursor.showcaseToken === null) return null
   return Buffer.from(JSON.stringify(cursor)).toString('base64')
 }
 
-async function queryProductsPage(
+export async function queryProductsPage(
   creatorId: string,
   productType: ProductType,
   pageSize: number,
   cursor: ProductCursor
 ): Promise<{ products: NormalizedProductItem[]; nextCursor: string | null; successCount: number; failedSources: string[] }> {
-  const typesToQuery = productType === 'all' ? ['shop', 'showcase'] : [productType]
+  const allTypesToQuery = productType === 'all' ? ['shop', 'showcase'] : [productType]
+  // Skip sources whose token is null — they already reached the last page
+  const typesToQuery = allTypesToQuery.filter((type) => {
+    const token = type === 'shop' ? cursor.shopToken : cursor.showcaseToken
+    return token !== null
+  })
   const allProducts = new Map<string, NormalizedProductItem>()
-  let nextShopToken = ''
-  let nextShowcaseToken = ''
+  let nextShopToken: string | null = cursor.shopToken
+  let nextShowcaseToken: string | null = cursor.showcaseToken
   let successCount = 0
   const failedSources: string[] = []
 
@@ -212,7 +221,7 @@ async function queryProductsPage(
         creatorUserOpenId: creatorId,
         productType: type,
         pageSize,
-        pageToken,
+        pageToken: pageToken ?? '',
       })
       return { type, data }
     })
@@ -233,8 +242,10 @@ async function queryProductsPage(
     const groups = Array.isArray(data) ? data : [data]
 
     for (const group of groups) {
-      if (type === 'shop') nextShopToken = group.nextPageToken ?? ''
-      if (type === 'showcase') nextShowcaseToken = group.nextPageToken ?? ''
+      // Preserve null — it means "this source has no more pages"
+      const token = group.nextPageToken === undefined ? null : group.nextPageToken
+      if (type === 'shop') nextShopToken = token
+      if (type === 'showcase') nextShowcaseToken = token
 
       for (const product of group.products ?? []) {
         if (!allProducts.has(product.id)) {
@@ -255,10 +266,7 @@ async function queryProductsPage(
     }
   }
 
-  const nextCursor =
-    nextShopToken || nextShowcaseToken
-      ? encodeCursor({ shopToken: nextShopToken, showcaseToken: nextShowcaseToken })
-      : null
+  const nextCursor = encodeCursor({ shopToken: nextShopToken, showcaseToken: nextShowcaseToken })
 
   return {
     products: Array.from(allProducts.values()),
@@ -275,7 +283,7 @@ export async function fetchProductPool(
   maxPages: number
 ): Promise<{ products: NormalizedProductItem[]; summary: ProductQuerySummary }> {
   const allProducts = new Map<string, NormalizedProductItem>()
-  let cursor: ProductCursor = { shopToken: '', showcaseToken: '' }
+  let cursor: ProductCursor = { shopToken: '', showcaseToken: '' } // empty string = first page
   let nextCursor: string | null = null
   let pagesScanned = 0
   const failedSourcesSet = new Set<string>()
@@ -319,10 +327,31 @@ export async function fetchProductPool(
   }
 }
 
+export function buildSkippedProductQuerySummary(
+  productType: ProductType,
+  pageSize: number
+): ProductQuerySummary {
+  return {
+    productType,
+    pageSize,
+    pagesScanned: 0,
+    productCount: 0,
+    nextCursor: null,
+    reachedPageLimit: false,
+    failedSources: [],
+  }
+}
+
+export function isProductPublishable(product: NormalizedProductItem): boolean {
+  if (product.reviewStatus && product.reviewStatus.toUpperCase() !== 'APPROVED') return false
+  if (product.inventoryStatus && product.inventoryStatus.toUpperCase() !== 'IN_STOCK') return false
+  return true
+}
+
 export function sortProductsForSelection(
   products: NormalizedProductItem[]
 ): NormalizedProductItem[] {
-  return [...products].sort((a, b) => b.salesCount - a.salesCount)
+  return products.filter(isProductPublishable).sort((a, b) => b.salesCount - a.salesCount)
 }
 
 export function buildSelectedProductSummary(
@@ -348,8 +377,16 @@ export async function promptForProductSelection(
     throw new Error('交互模式需要在 TTY 终端中运行')
   }
 
-  const candidates = sortProductsForSelection(products).slice(0, 20)
-  console.log(`可选商品（展示前 ${candidates.length} 个，按销量降序）：`)
+  const candidates = products
+    .filter(isProductPublishable)
+    .sort((a, b) => b.salesCount - a.salesCount)
+    .slice(0, 20)
+
+  if (candidates.length === 0) {
+    throw new Error('当前商品池中没有可发布商品（审核未通过或无库存），如需强制指定请使用 --product-id/--product-title')
+  }
+
+  console.log(`可选商品（展示前 ${candidates.length} 个，按销量降序，已过滤不可发布商品）：`)
   for (const [index, product] of candidates.entries()) {
     console.log(
       `${index + 1}. [${product.source}] ${product.title} | ID: ${product.id} | 销量: ${product.salesCount}`

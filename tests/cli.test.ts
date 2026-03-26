@@ -4,11 +4,10 @@ import { describe, expect, it } from 'vitest'
 import pkg from '../package.json' with { type: 'json' }
 
 const repoRoot = fileURLToPath(new URL('../', import.meta.url))
-const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm'
 
 describe('cli entrypoints', () => {
-  it('prints version in dev mode', () => {
-    const result = spawnSync(npmCmd, ['run', 'dev', '--', '--version'], {
+  it('prints version', () => {
+    const result = spawnSync(process.execPath, ['--import', 'tsx', 'src/cli.ts', '--version'], {
       cwd: repoRoot,
       encoding: 'utf8',
     })

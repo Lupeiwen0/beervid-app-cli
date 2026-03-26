@@ -148,8 +148,8 @@ export interface ProductPageData {
 }
 
 export interface ProductCursor {
-  shopToken: string
-  showcaseToken: string
+  shopToken: string | null
+  showcaseToken: string | null
 }
 
 // ─── Workflows ────────────────────────────────────────────────────────────────

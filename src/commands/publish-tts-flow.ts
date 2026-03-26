@@ -4,6 +4,7 @@ import {
   fetchProductPool,
   sortProductsForSelection,
   buildSelectedProductSummary,
+  buildSkippedProductQuerySummary,
   promptForProductSelection,
   uploadTtsVideo,
   publishTtsVideo,
@@ -117,63 +118,77 @@ export function register(cli: CAC): void {
         try {
           console.log('开始执行 TTS 完整发布流程...')
 
-          console.log('1/4 正在查询商品列表...')
-          const productPool = await fetchProductPool(
-            options.creatorId,
-            productType as ProductType,
-            pageSize,
-            maxProductPages
-          )
           const warnings: WorkflowWarning[] = []
-
-          if (productPool.summary.reachedPageLimit && productPool.summary.nextCursor) {
-            warnings.push({
-              code: 'PRODUCT_SCAN_LIMIT_REACHED',
-              message: `商品扫描已达到页数上限 ${maxProductPages}，仍存在未拉取分页`,
-            })
-          }
-
-          if (productPool.summary.failedSources.length > 0) {
-            warnings.push({
-              code: 'PRODUCT_SOURCE_PARTIAL_FAILURE',
-              message: `以下商品源请求失败: ${productPool.summary.failedSources.join(', ')}，商品池可能不完整`,
-            })
-          }
-
-          if (productPool.products.length === 0) {
-            console.error('TTS 完整发布流程失败: 当前商品池为空，无法选择商品')
-            process.exit(1)
-          }
-
           let selectionMode: SelectedProductSummary['selectionMode'] = 'automatic'
           let selectedProduct: NormalizedProductItem
+          let productPoolSummary: TTSWorkflowResult['productQuery'] | undefined
 
-          if (options.productId) {
+          // If both --product-id and --product-title are provided, skip product scan entirely
+          if (options.productId && options.productTitle) {
             selectionMode = 'manual'
-            const matchedProduct = productPool.products.find(
-              (product) => product.id === options.productId
+            console.log('1/4 已手动指定商品，跳过商品查询...')
+            selectedProduct = buildManualProduct(options.productId, options.productTitle)
+          } else {
+            console.log('1/4 正在查询商品列表...')
+            const productPool = await fetchProductPool(
+              options.creatorId,
+              productType as ProductType,
+              pageSize,
+              maxProductPages
             )
-            const resolvedTitle = options.productTitle ?? matchedProduct?.title
-            if (!resolvedTitle) {
-              console.error(
-                '错误: 手动指定 --product-id 时，如无法从已扫描商品池补齐标题，则必须显式传入 --product-title'
-              )
-              process.exit(1)
-            }
-            selectedProduct = buildManualProduct(options.productId, resolvedTitle, matchedProduct)
-            if (!matchedProduct) {
+            productPoolSummary = productPool.summary
+
+            if (productPool.summary.reachedPageLimit && productPool.summary.nextCursor) {
               warnings.push({
-                code: 'PRODUCT_NOT_IN_SCANNED_POOL',
-                message: '手动指定的商品 ID 未出现在已扫描商品池中，已使用显式参数继续发布',
+                code: 'PRODUCT_SCAN_LIMIT_REACHED',
+                message: `商品扫描已达到页数上限 ${maxProductPages}，仍存在未拉取分页`,
               })
             }
-          } else if (options.interactive) {
-            selectionMode = 'interactive'
-            console.log('2/4 请选择要挂车的商品...')
-            selectedProduct = await promptForProductSelection(productPool.products)
-          } else {
-            console.log('2/4 正在自动选择商品（按销量最高优先）...')
-            selectedProduct = sortProductsForSelection(productPool.products)[0]!
+
+            if (productPool.summary.failedSources.length > 0) {
+              warnings.push({
+                code: 'PRODUCT_SOURCE_PARTIAL_FAILURE',
+                message: `以下商品源请求失败: ${productPool.summary.failedSources.join(', ')}，商品池可能不完整`,
+              })
+            }
+
+            if (options.productId) {
+              // --product-id without --product-title: try to resolve title from pool
+              selectionMode = 'manual'
+              const matchedProduct = productPool.products.find(
+                (product) => product.id === options.productId
+              )
+              const resolvedTitle = matchedProduct?.title
+              if (!resolvedTitle) {
+                console.error(
+                  '错误: 手动指定 --product-id 时，如无法从已扫描商品池补齐标题，则必须显式传入 --product-title'
+                )
+                process.exit(1)
+              }
+              selectedProduct = buildManualProduct(options.productId, resolvedTitle, matchedProduct)
+            } else if (options.interactive) {
+              if (productPool.products.length === 0) {
+                console.error('TTS 完整发布流程失败: 当前商品池为空，无法选择商品')
+                process.exit(1)
+              }
+              selectionMode = 'interactive'
+              console.log('2/4 请选择要挂车的商品...')
+              selectedProduct = await promptForProductSelection(productPool.products)
+            } else {
+              if (productPool.products.length === 0) {
+                console.error('TTS 完整发布流程失败: 当前商品池为空，无法选择商品')
+                process.exit(1)
+              }
+              console.log('2/4 正在自动选择商品（按销量最高优先）...')
+              const publishable = sortProductsForSelection(productPool.products)
+              if (publishable.length === 0) {
+                console.error(
+                  'TTS 完整发布流程失败: 商品池中没有可发布商品（审核未通过或无库存），如需强制指定请使用 --product-id/--product-title'
+                )
+                process.exit(1)
+              }
+              selectedProduct = publishable[0]!
+            }
           }
 
           console.log('3/4 正在上传挂车视频...')
@@ -197,7 +212,7 @@ export function register(cli: CAC): void {
 
           const result: TTSWorkflowResult = {
             flowType: 'tts',
-            productQuery: productPool.summary,
+            productQuery: productPoolSummary ?? buildSkippedProductQuerySummary(productType as ProductType, pageSize),
             selectedProduct: buildSelectedProductSummary(selectedProduct, selectionMode),
             upload,
             publish: publishResult.publish,

@@ -141,4 +141,58 @@ describe('query-products command', () => {
       nextCursor,
     })
   })
+
+  it('preserves null tokens in cursor and skips exhausted sources', async () => {
+    const cursor = Buffer.from(
+      JSON.stringify({ shopToken: null, showcaseToken: 'showcase-next' })
+    ).toString('base64')
+
+    openApiPost.mockResolvedValueOnce({
+      nextPageToken: null,
+      products: [
+        {
+          id: 'p-3',
+          title: 'Showcase next page',
+          images: ['https://img.example.com/showcase-next.jpg'],
+          salesCount: 30,
+          brandName: 'Brand D',
+          shopName: 'Shop D',
+        },
+      ],
+    })
+
+    const result = await runCommand(register, [
+      'query-products',
+      '--creator-id',
+      'creator-1',
+      '--cursor',
+      cursor,
+    ])
+
+    expect(result.exitCode).toBeUndefined()
+    expect(openApiPost).toHaveBeenCalledTimes(1)
+    expect(openApiPost).toHaveBeenCalledWith('/api/v1/open/tts/products/query', {
+      creatorUserOpenId: 'creator-1',
+      productType: 'showcase',
+      pageSize: 20,
+      pageToken: 'showcase-next',
+    })
+    expect(printResult).toHaveBeenCalledWith({
+      products: [
+        {
+          id: 'p-3',
+          title: 'Showcase next page',
+          price: undefined,
+          images: ['https://img.example.com/showcase-next.jpg'],
+          salesCount: 30,
+          brandName: 'Brand D',
+          shopName: 'Shop D',
+          source: 'showcase',
+          reviewStatus: undefined,
+          inventoryStatus: undefined,
+        },
+      ],
+      nextCursor: null,
+    })
+  })
 })
