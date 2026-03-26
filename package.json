@@ -13,6 +13,8 @@
     "dist/",
     "agents/",
     "references/",
+    "docs/",
+    "example/",
     "SKILL.md",
     "README.md"
   ],

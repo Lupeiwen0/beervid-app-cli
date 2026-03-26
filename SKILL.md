@@ -484,3 +484,25 @@ beervid publish-tt-flow --business-id biz_123 --file ./video.mp4 --caption "My v
 ```bash
 beervid publish-tts-flow --creator-id open_user_abc --file ./video.mp4
 ```
+
+## 落地文档与示例工程
+
+面向接入方后端工程师的项目落地建议和可运行示例：
+
+### 落地文档
+
+| 文档 | 内容 |
+|------|------|
+| [`docs/database-schema.md`](./docs/database-schema.md) | 数据表字段建议（accounts/videos/products） |
+| [`docs/oauth-callback.md`](./docs/oauth-callback.md) | OAuth 回调存储建议（State Token、持久化流程） |
+| [`docs/tt-poll-task.md`](./docs/tt-poll-task.md) | TT 轮询任务建议（阶梯递增间隔、Cron/队列） |
+| [`docs/tts-product-cache.md`](./docs/tts-product-cache.md) | TTS 商品缓存建议（全量拉取、缓存淘汰） |
+| [`docs/retry-and-idempotency.md`](./docs/retry-and-idempotency.md) | 失败重试与幂等建议（各 API 幂等分析） |
+
+### 示例工程
+
+| 示例 | 场景 | 说明 |
+|------|------|------|
+| [`example/standard/`](./example/standard/) | 纯 Node.js 脚本 | 含 TT/TTS 完整发布流程最佳实践 |
+| [`example/express/`](./example/express/) | Express 后端服务 | 含 OAuth 回调、发布接口、后台轮询 |
+| [`example/nextjs/`](./example/nextjs/) | Next.js API Route | 含 TT/TTS 发布、状态查询、商品查询 |
