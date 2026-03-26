@@ -10,6 +10,8 @@ description: >
 
 # BEERVID 第三方应用 Open API 集成开发指南
 
+> **版本:** `0.1.0` &nbsp;|&nbsp; **Node.js:** `>=20.0.0`
+
 本 skill 专用于 **BEERVID 面向第三方应用开放的 Open API**，覆盖 6 大能力模块。
 
 > **与 BEERVID 内部 API 的区别：** BEERVID 平台有两套 API 体系：

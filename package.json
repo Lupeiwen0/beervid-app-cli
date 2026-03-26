@@ -1,7 +1,7 @@
 {
   "name": "beervid-app-cli",
-  "version": "1.0.0",
-  "description": "BEERVID Open API CLI — TikTok video publish, account auth, and data query",
+  "version": "0.1.0",
+  "description": "BEERVID App CLI — TikTok video publish, account auth, and data query",
   "type": "module",
   "engines": {
     "node": ">=20.0.0"
