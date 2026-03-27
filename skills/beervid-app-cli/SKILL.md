@@ -102,7 +102,7 @@ interface OpenApiResponse<T> {
 
 ```text
 获取 TT OAuth URL
-  -> 用户授权回调得到 ttAbId
+  -> 用户授权回调，从 `state` JSON 中解析得到 ttAbId
   -> ttAbId 作为 businessId 持久化
   -> 获取上传凭证
   -> 上传普通视频，拿到 fileUrl
@@ -116,7 +116,7 @@ interface OpenApiResponse<T> {
 
 ```text
 获取 TTS OAuth URL
-  -> 用户授权回调得到 ttsAbId
+  -> 用户授权回调，从 `state` JSON 中解析得到 ttsAbId
   -> ttsAbId 作为 creatorUserOpenId 持久化
   -> 查询商品，得到 productId + productTitle
   -> 获取上传凭证
@@ -130,8 +130,8 @@ interface OpenApiResponse<T> {
 
 | 参数                     | 含义                 | 产出来源                                           |
 | ------------------------ | -------------------- | -------------------------------------------------- |
-| `businessId`             | TT 账号业务 ID       | OAuth 回调参数 `ttAbId`                            |
-| `creatorUserOpenId`      | TTS 账号 OpenId      | OAuth 回调参数 `ttsAbId`                           |
+| `businessId`             | TT 账号业务 ID       | OAuth 回调 `state` JSON 中的 `ttAbId`              |
+| `creatorUserOpenId`      | TTS 账号 OpenId      | OAuth 回调 `state` JSON 中的 `ttsAbId`             |
 | `accountId`              | 平台账号 ID          | 即 `ttAbId` 或 `ttsAbId`，用于查询账号详情         |
 | `uploadToken`            | 上传凭证             | `upload-token/generate` 返回                       |
 | `fileUrl`                | 普通上传后的视频 URL | `file-upload` 返回                                 |

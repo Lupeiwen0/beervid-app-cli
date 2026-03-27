@@ -182,10 +182,26 @@ app.get('/oauth/tts', async (_req, res) => {
 
 // OAuth 回调处理
 app.get('/oauth/callback', async (req, res) => {
-  const ttAbId = req.query['ttAbId'] as string | undefined
-  const ttsAbId = req.query['ttsAbId'] as string | undefined
+  const stateParam = req.query['state'] as string | undefined
 
-  // 生产环境：① 验证 state token ② 一次性消费检查
+  if (!stateParam) {
+    res.status(400).json({ error: '缺少 state 参数' })
+    return
+  }
+
+  // 回调字段在 state JSON 内部
+  let stateObj: Record<string, unknown>
+  try {
+    stateObj = JSON.parse(stateParam) as Record<string, unknown>
+  } catch {
+    res.status(400).json({ error: 'state 不是合法 JSON' })
+    return
+  }
+
+  const ttAbId = stateObj['ttAbId'] as string | undefined
+  const ttsAbId = stateObj['ttsAbId'] as string | undefined
+
+  // 生产环境：① 验证 state 中你方追加的自定义安全字段 ② 一次性消费检查
   // 详见 docs/oauth-callback.md
 
   if (!ttAbId && !ttsAbId) {
