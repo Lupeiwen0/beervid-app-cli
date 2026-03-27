@@ -5,8 +5,9 @@
  *   npx tsx get-oauth-url.ts --type tt
  *   npx tsx get-oauth-url.ts --type tts
  *
- * 生产环境：如果要往授权链接里追加你方自定义安全字段，
- * 先判断现有 state 是否为 JSON 对象；若是，再在该 JSON 中追加字段。
+ * 生产环境：授权链接中不一定携带 state 参数。
+ * 如果已有 state，其值为 JSON，可解析后追加自定义字段；
+ * 如果没有 state，需透传参数时应自行构造 JSON 设置为 state。
  * 详见 docs/oauth-callback.md
  */
 

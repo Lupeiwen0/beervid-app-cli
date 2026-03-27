@@ -154,8 +154,10 @@ async function pollVideoStatusInBackground(record: VideoRecord): Promise<void> {
 app.get('/oauth/tt', async (_req, res) => {
   try {
     const url = await openApiGet<string>('/api/v1/open/thirdparty-auth/tt-url')
-    // 生产环境：先判断授权链接中的 state 是否为 JSON 对象；
-    // 若是，再在该 JSON 中追加你方自定义安全字段，详见 docs/oauth-callback.md
+    // 生产环境：授权链接中不一定携带 state 参数。
+    // 如果已有 state，其值为 JSON，可解析后追加自定义字段；
+    // 如果没有 state，需透传参数时应自行构造 JSON 设置为 state。
+    // 详见 docs/oauth-callback.md
     res.redirect(url)
   } catch (err) {
     res.status(500).json({ error: (err as Error).message })
@@ -168,8 +170,10 @@ app.get('/oauth/tts', async (_req, res) => {
     const data = await openApiGet<{ crossBorderUrl: string }>(
       '/api/v1/open/thirdparty-auth/tts-url'
     )
-    // 生产环境：先判断授权链接中的 state 是否为 JSON 对象；
-    // 若是，再在该 JSON 中追加你方自定义安全字段，详见 docs/oauth-callback.md
+    // 生产环境：授权链接中不一定携带 state 参数。
+    // 如果已有 state，其值为 JSON，可解析后追加自定义字段；
+    // 如果没有 state，需透传参数时应自行构造 JSON 设置为 state。
+    // 详见 docs/oauth-callback.md
     res.redirect(data.crossBorderUrl)
   } catch (err) {
     res.status(500).json({ error: (err as Error).message })
