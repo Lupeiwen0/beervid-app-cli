@@ -30,6 +30,29 @@ node dist/cli.mjs --help
 node dist/cli.mjs config --show
 ```
 
+### 在 Claude Code / Codex / Antigravity 中使用
+
+如果你希望在 Claude Code、Codex 等支持 Skill 的工具中直接调用本项目，除了通过 npm 安装 CLI 之外，还需要把 Skill 相关文件复制到你自己的 skills 目录下。
+
+需要复制的内容：
+
+- `SKILL.md`
+- `references/`
+- `docs/`
+- `example/`
+
+建议在你的 skills 目录中保持如下结构：
+
+```text
+beervid-app-cli/
+  SKILL.md
+  references/
+  docs/
+  example/
+```
+
+这样工具在加载 `SKILL.md` 时，才能继续访问本项目附带的 API 参考、落地文档和示例工程。
+
 ## 配置
 
 ```bash
@@ -84,3 +107,25 @@ beervid publish-tts-flow --creator-id open_user_abc --file ./video.mp4 --product
 ```
 
 详细用法见 [SKILL.md](./SKILL.md)。完整 API 参考见 [references/api-reference.md](./references/api-reference.md)。
+
+## 落地文档
+
+面向接入方后端工程师的项目落地建议：
+
+| 文档 | 内容 |
+|------|------|
+| [数据表字段建议](./docs/database-schema.md) | accounts/videos/products 表结构设计 |
+| [OAuth 回调存储建议](./docs/oauth-callback.md) | State Token 防 CSRF、回调持久化、异步头像同步 |
+| [TT 轮询任务建议](./docs/tt-poll-task.md) | 阶梯递增轮询间隔、Cron/队列三层保障 |
+| [TTS 商品缓存建议](./docs/tts-product-cache.md) | 全量拉取、缓存过期、图片 URL 解析 |
+| [失败重试与幂等建议](./docs/retry-and-idempotency.md) | 各 API 幂等性分析、指数退避、幂等键设计 |
+
+## 示例工程
+
+三种接入场景的可运行示例：
+
+| 示例 | 场景 | 入口 |
+|------|------|------|
+| [Standard](./example/standard/) | 纯 Node.js 脚本，快速验证 | `npx tsx tt-publish-flow.ts` |
+| [Express](./example/express/) | Express 后端服务，含 OAuth 回调 | `npx tsx server.ts` |
+| [Next.js](./example/nextjs/) | Next.js App Router API Route | `npm run dev` |

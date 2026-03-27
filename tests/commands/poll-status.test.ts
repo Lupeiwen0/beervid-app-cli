@@ -116,4 +116,26 @@ describe('poll-status command', () => {
     expect(result.exitCode).toBe(2)
     expect(result.errors.some((line) => line.includes('超过最大轮询次数'))).toBe(true)
   })
+
+  it('preserves large numeric ids from raw argv', async () => {
+    openApiPost.mockResolvedValueOnce({
+      status: 'PUBLISH_COMPLETE',
+      post_ids: ['video-1'],
+    })
+
+    const result = await runCommand(register, [
+      'poll-status',
+      '--business-id=7123456789012345678',
+      '--share-id',
+      '8123456789012345678',
+      '--max-polls',
+      '1',
+    ])
+
+    expect(result.exitCode).toBe(0)
+    expect(openApiPost).toHaveBeenCalledWith('/api/v1/open/tiktok/video/status', {
+      businessId: '7123456789012345678',
+      shareId: '8123456789012345678',
+    })
+  })
 })

@@ -119,4 +119,22 @@ describe('query-video command', () => {
       itemIds: ['item-1', 'item-2', 'item-3'],
     })
   })
+
+  it('preserves large numeric ids from raw argv', async () => {
+    openApiPost.mockResolvedValueOnce({ videos: [] })
+
+    const result = await runCommand(register, [
+      'query-video',
+      '--business-id=7123456789012345678',
+      '--item-ids',
+      '8123456789012345678',
+      '--item-ids=9123456789012345678,1123456789012345678',
+    ])
+
+    expect(result.exitCode).toBe(0)
+    expect(openApiPost).toHaveBeenCalledWith('/api/v1/open/tiktok/video/query', {
+      businessId: '7123456789012345678',
+      itemIds: ['8123456789012345678', '9123456789012345678', '1123456789012345678'],
+    })
+  })
 })

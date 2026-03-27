@@ -237,4 +237,38 @@ describe('publish-tts-flow command', () => {
       publish: { videoId: 'video-2' },
     })
   })
+
+  it('preserves large numeric ids from raw argv', async () => {
+    uploadTtsVideo.mockResolvedValueOnce({ videoFileId: '8123456789012345678' })
+    publishTtsVideo.mockResolvedValueOnce({
+      publish: { videoId: 'video-1' },
+      productTitle: 'Manual product',
+    })
+
+    const result = await runCommand(register, [
+      'publish-tts-flow',
+      '--creator-id=7123456789012345678',
+      '--file',
+      '/tmp/video.mp4',
+      '--product-id',
+      '9123456789012345678',
+      '--product-title',
+      'Manual product',
+    ])
+
+    expect(result.exitCode).toBeUndefined()
+    expect(fetchProductPool).not.toHaveBeenCalled()
+    expect(uploadTtsVideo).toHaveBeenCalledWith(
+      '/tmp/video.mp4',
+      '7123456789012345678',
+      undefined
+    )
+    expect(publishTtsVideo).toHaveBeenCalledWith(
+      '7123456789012345678',
+      '8123456789012345678',
+      '9123456789012345678',
+      'Manual product',
+      undefined
+    )
+  })
 })

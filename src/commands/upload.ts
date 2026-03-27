@@ -2,7 +2,7 @@ import type { CAC } from 'cac'
 import { printResult } from '../client/index.js'
 import { uploadNormalVideo, uploadTtsVideo } from '../utils/upload.js'
 import type { NormalUploadResult, TtsUploadResult } from '../types/index.js'
-import { rethrowIfProcessExit } from './utils.js'
+import { getRawOptionValue, rethrowIfProcessExit } from './utils.js'
 
 const VALID_UPLOAD_TYPES = ['normal', 'tts']
 
@@ -29,12 +29,13 @@ export function register(cli: CAC): void {
         }
 
         const uploadType = (options.type ?? 'normal').toLowerCase()
+        const creatorId = getRawOptionValue(cli.rawArgs, '--creator-id')
         if (!VALID_UPLOAD_TYPES.includes(uploadType)) {
           console.error('错误: --type 必须为 normal 或 tts')
           process.exit(1)
         }
 
-        if (uploadType === 'tts' && !options.creatorId) {
+        if (uploadType === 'tts' && !creatorId) {
           console.error('错误: TTS 上传模式需要 --creator-id 参数')
           process.exit(1)
         }
@@ -43,8 +44,8 @@ export function register(cli: CAC): void {
           let data: NormalUploadResult | TtsUploadResult
 
           if (uploadType === 'tts') {
-            console.log(`TTS 上传模式，creatorUserOpenId: ${options.creatorId!}`)
-            data = await uploadTtsVideo(options.file, options.creatorId!, options.token)
+            console.log(`TTS 上传模式，creatorUserOpenId: ${creatorId!}`)
+            data = await uploadTtsVideo(options.file, creatorId!, options.token)
           } else {
             console.log('普通上传模式')
             data = await uploadNormalVideo(options.file, options.token)

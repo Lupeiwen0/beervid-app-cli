@@ -82,4 +82,29 @@ describe('publish command', () => {
     expect(result.logs.some((line) => line.includes('已自动截断'))).toBe(true)
     expect(printResult).toHaveBeenCalledWith({ videoId: 'video-1' })
   })
+
+  it('preserves large numeric ids from raw argv', async () => {
+    openApiPost.mockResolvedValueOnce({ videoId: 'video-1' })
+
+    const result = await runCommand(register, [
+      'publish',
+      '--type',
+      'shoppable',
+      '--creator-id=7123456789012345678',
+      '--file-id',
+      '8123456789012345678',
+      '--product-id=9123456789012345678',
+      '--product-title',
+      'Product title',
+    ])
+
+    expect(result.exitCode).toBeUndefined()
+    expect(openApiPost).toHaveBeenCalledWith('/api/v1/open/tts/shoppable-video/publish', {
+      creatorUserOpenId: '7123456789012345678',
+      fileId: '8123456789012345678',
+      title: '',
+      productId: '9123456789012345678',
+      productTitle: 'Product title',
+    })
+  })
 })

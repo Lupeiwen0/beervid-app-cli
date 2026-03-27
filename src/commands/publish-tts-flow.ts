@@ -11,7 +11,7 @@ import type {
   ProductType,
   NormalizedProductItem,
 } from '../types/index.js'
-import { rethrowIfProcessExit } from './utils.js'
+import { getRawOptionValue, rethrowIfProcessExit } from './utils.js'
 
 const VALID_PRODUCT_TYPES = ['shop', 'showcase', 'all']
 
@@ -76,9 +76,12 @@ export function register(cli: CAC): void {
         productTitle?: string
         interactive?: boolean
       }) => {
-        if (!options.creatorId || !options.file) {
+        const creatorId = getRawOptionValue(cli.rawArgs, '--creator-id')
+        const productId = getRawOptionValue(cli.rawArgs, '--product-id')
+
+        if (!creatorId || !options.file) {
           const missing = [
-            !options.creatorId && '--creator-id',
+            !creatorId && '--creator-id',
             !options.file && '--file',
           ].filter(Boolean)
           console.error(`缺少必填参数: ${missing.join(', ')}\n`)
@@ -94,11 +97,11 @@ export function register(cli: CAC): void {
           process.exit(1)
         }
 
-        if (options.productId && options.interactive) {
+        if (productId && options.interactive) {
           console.error('错误: --product-id 与 --interactive 不能同时使用')
           process.exit(1)
         }
-        if (options.productTitle && !options.productId) {
+        if (options.productTitle && !productId) {
           console.error('错误: --product-title 需要与 --product-id 一起使用')
           process.exit(1)
         }
@@ -117,13 +120,13 @@ export function register(cli: CAC): void {
           let queriedProducts: unknown = null
 
           // If both --product-id and --product-title are provided, skip product scan entirely
-          if (options.productId && options.productTitle) {
+          if (productId && options.productTitle) {
             console.log('1/4 已手动指定商品，跳过商品查询...')
-            selectedProduct = buildManualProduct(options.productId, options.productTitle)
+            selectedProduct = buildManualProduct(productId, options.productTitle)
           } else {
             console.log('1/4 正在查询商品列表...')
             const productPool = await fetchProductPool(
-              options.creatorId,
+              creatorId,
               productType as ProductType,
               pageSize,
               maxProductPages
@@ -140,11 +143,9 @@ export function register(cli: CAC): void {
               )
             }
 
-            if (options.productId) {
+            if (productId) {
               // --product-id without --product-title: try to resolve title from pool
-              const matchedProduct = productPool.products.find(
-                (product) => product.id === options.productId
-              )
+              const matchedProduct = productPool.products.find((product) => product.id === productId)
               const resolvedTitle = matchedProduct?.title
               if (!resolvedTitle) {
                 console.error(
@@ -152,7 +153,7 @@ export function register(cli: CAC): void {
                 )
                 process.exit(1)
               }
-              selectedProduct = buildManualProduct(options.productId, resolvedTitle, matchedProduct)
+              selectedProduct = buildManualProduct(productId, resolvedTitle, matchedProduct)
             } else if (options.interactive) {
               if (productPool.products.length === 0) {
                 console.error('TTS 完整发布流程失败: 当前商品池为空，无法选择商品')
@@ -178,11 +179,11 @@ export function register(cli: CAC): void {
           }
 
           console.log('3/4 正在上传挂车视频...')
-          const upload = await uploadTtsVideo(options.file, options.creatorId, options.token)
+          const upload = await uploadTtsVideo(options.file, creatorId, options.token)
 
           console.log('4/4 正在发布挂车视频...')
           const publishResult = await publishTtsVideo(
-            options.creatorId,
+            creatorId,
             upload.videoFileId,
             selectedProduct.id,
             selectedProduct.title,
