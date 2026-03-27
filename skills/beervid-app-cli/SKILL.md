@@ -184,9 +184,13 @@ creatorUserOpenId -> upload-tts-video -> fileId -> shoppable-publish -> videoId
 - 上传请求头使用 `X-UPLOAD-TOKEN`
 - 如需上传进度与取消能力，优先用 XHR 而非裸 `fetch`
 
-## CLI 使用原则
+## CLI 工具
 
-本仓库已经提供 `beervid` CLI；如果用户要“直接操作 API”或“快速验证链路”，优先复用 CLI 能力，不必手写一遍完整流程。
+本 Skill 配套提供 `beervid` CLI；可直接在终端调用所有 Open API 能力。如需使用 CLI，请先安装：
+
+```bash
+npm install -g beervid-app-cli
+```
 
 ### CLI 前置
 

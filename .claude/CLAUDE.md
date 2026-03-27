@@ -6,9 +6,10 @@
 
 这个仓库不是纯 CLI 仓库，也同时作为 Claude Skill 分发：
 
-- npm 产物包含 `dist/`、`README.md`、`SKILL.md`
-- `SKILL.md` 描述的是面向 Claude/Agent 的 BEERVID Open API 使用规范
-- 因此任何命令能力、参数、环境变量、调用约定发生变化时，通常要同步检查 `README.md` 和 `SKILL.md`
+- npm 产物包含 `dist/`、`README.md`、`skills/`
+- `skills/beervid-app-cli/SKILL.md` 描述的是面向 Claude/Agent 的 BEERVID Open API 使用规范
+- Skill 通过 `npx skills add` 分发安装，安装入口为 `skills/beervid-app-cli/`
+- 因此任何命令能力、参数、环境变量、调用约定发生变化时，通常要同步检查 `README.md` 和 `skills/beervid-app-cli/SKILL.md`
 
 ## 目录结构
 
@@ -37,10 +38,14 @@
   命令层测试，基本按 `src/commands` 一一对应。
 - `tests/helpers/cli.ts`
   CLI 测试辅助，mock `console` 和 `process.exit`。
-- `references/api-reference.md`
+- `skills/beervid-app-cli/references/api-reference.md`
   API 参考资料。
-- `SKILL.md`
+- `skills/beervid-app-cli/SKILL.md`
   Claude Skill 说明，属于这个仓库的重要交付物，不是附属文档。
+- `skills/beervid-app-cli/docs/`
+  落地建议文档（数据表、OAuth、轮询、缓存、幂等）。
+- `skills/beervid-app-cli/example/`
+  Standard / Express / Next.js 示例工程。
 
 ## 当前命令面
 
@@ -133,6 +138,8 @@ npm test
   - `SKILL.md`
   - `references/api-reference.md`（如果是参考资料层面的变化）
 
+以上文档均在 `skills/beervid-app-cli/` 目录下。
+
 ## 对 Claude 的工作指引
 
 在这个仓库里工作时，优先按下面方式理解任务：
@@ -145,7 +152,7 @@ npm test
   - 视情况补 `src/types` / `src/client` / `src/workflows`
   - 补测试
   - 更新 `README.md`
-  - 如对 Claude Skill 行为有影响，更新 `SKILL.md`
+  - 如对 Claude Skill 行为有影响，更新 `skills/beervid-app-cli/SKILL.md`
 - 如果修改 API 调用方式，先检查 `src/client/index.ts` 是否已经有合适抽象，避免在命令层重复写 fetch 逻辑
 
 ## 当前仓库的关键事实
@@ -160,4 +167,4 @@ npm test
   - 发布状态轮询
   - 视频数据查询
   - TTS 商品查询与选择
-- `SKILL.md` 已经承载了大量业务域知识，写代码前值得先对照它确认接口语义和参数链路
+- `SKILL.md` 已经承载了大量业务域知识，写代码前值得先对照 `skills/beervid-app-cli/SKILL.md` 确认接口语义和参数链路

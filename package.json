@@ -11,11 +11,7 @@
   },
   "files": [
     "dist/",
-    "agents/",
-    "references/",
-    "docs/",
-    "example/",
-    "SKILL.md",
+    "skills/",
     "README.md"
   ],
   "scripts": {
