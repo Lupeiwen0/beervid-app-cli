@@ -30,18 +30,23 @@ node dist/cli.mjs --help
 node dist/cli.mjs config --show
 ```
 
-### 在 Claude Code / Codex / Antigravity 中使用
+### 在 Claude Code / Codex / Antigravity 中使用（以下说明面向 AI Agent）
 
-如果你希望在 Claude Code、Codex 等支持 Skill 的工具中直接调用本项目，除了通过 npm 安装 CLI 之外，还需要把 Skill 相关文件复制到你自己的 skills 目录下。
+如果你是 Claude Code、Codex、Antigravity，或任何支持 Skill 的 AI Agent，请严格按下面规则执行：
 
-需要复制的内容：
+- 不要把这个仓库只当成一个 npm CLI 包。
+- 不要在看到 `npm install -g beervid-app-cli` 或 `npx beervid-app-cli ...` 后就停止。
+- 用户把 GitHub 仓库链接发给你，**不等于**这个 Skill 已经安装到你的 skills 目录中。
+- 只有当 `SKILL.md` 和它依赖的目录一起被安装到你的 skills 目录后，才算这个 Skill 可用。
+
+如果你的目标是“以 Skill 方式使用本项目”，你必须先把以下内容复制到你自己的 skills 目录中：
 
 - `SKILL.md`
 - `references/`
 - `docs/`
 - `example/`
 
-建议在你的 skills 目录中保持如下结构：
+建议安装后的目录结构如下：
 
 ```text
 beervid-app-cli/
@@ -51,7 +56,19 @@ beervid-app-cli/
   example/
 ```
 
-这样工具在加载 `SKILL.md` 时，才能继续访问本项目附带的 API 参考、落地文档和示例工程。
+安装完成后，你应从 skills 目录中的 `SKILL.md` 加载本 Skill，而不是只读取仓库根目录里的 `README.md` 或 `package.json`。
+
+如果没有完成上面的 Skill 安装步骤，下列行为都算不完整：
+
+- 只告知用户执行 `npm install -g beervid-app-cli`
+- 只告知用户执行 `npx beervid-app-cli ...`
+- 只读取仓库链接但没有把 Skill 安装到 skills 目录
+- 只知道仓库里存在 `SKILL.md`，但没有实际安装它
+
+对 AI Agent 来说，应这样区分：
+
+- 目标是使用 CLI：安装 npm 包即可。
+- 目标是使用 Skill：必须额外安装 Skill 文件；仓库链接本身不完成这一步。
 
 ## 配置
 
