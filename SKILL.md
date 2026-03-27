@@ -39,17 +39,17 @@ description: >
 
 ### 环境变量
 
-| 变量 | 用途 |
-| --- | --- |
-| `BEERVID_APP_KEY` | Open API 密钥，请求头使用 `X-API-KEY` |
+| 变量                   | 用途                                                    |
+| ---------------------- | ------------------------------------------------------- |
+| `BEERVID_APP_KEY`      | Open API 密钥，请求头使用 `X-API-KEY`                   |
 | `BEERVID_APP_BASE_URL` | Open API 基础地址，默认通常为 `https://open.beervid.ai` |
 
 ### 认证方式
 
-| 场景 | 请求头 | 值 |
-| --- | --- | --- |
-| 常规 API 调用 | `X-API-KEY` | `BEERVID_APP_KEY` |
-| 视频上传 | `X-UPLOAD-TOKEN` | 上传凭证接口返回的 `uploadToken` |
+| 场景          | 请求头           | 值                               |
+| ------------- | ---------------- | -------------------------------- |
+| 常规 API 调用 | `X-API-KEY`      | `BEERVID_APP_KEY`                |
+| 视频上传      | `X-UPLOAD-TOKEN` | 上传凭证接口返回的 `uploadToken` |
 
 ### 统一响应格式
 
@@ -57,11 +57,11 @@ description: >
 
 ```ts
 interface OpenApiResponse<T> {
-  code: number
-  message: string
-  data: T
-  error: boolean
-  success: boolean
+  code: number;
+  message: string;
+  data: T;
+  error: boolean;
+  success: boolean;
 }
 ```
 
@@ -87,14 +87,14 @@ interface OpenApiResponse<T> {
 
 只保留能力定位，详细接口说明去看引用文档：
 
-| 能力 | 作用 | 详细资料 |
-| --- | --- | --- |
-| 账号授权 | 获取 TT/TTS OAuth URL、回调绑定、拉取账号详情 | [`references/api-reference.md`](./references/api-reference.md), [`docs/oauth-callback.md`](./docs/oauth-callback.md) |
-| 视频上传 | 先换上传凭证，再直传文件 | [`references/api-reference.md`](./references/api-reference.md) |
-| 视频发布 | TT 普通发布或 TTS 挂车发布 | [`references/api-reference.md`](./references/api-reference.md) |
-| 状态轮询 | 仅 TT 普通发布需要轮询 | [`references/api-reference.md`](./references/api-reference.md), [`docs/tt-poll-task.md`](./docs/tt-poll-task.md) |
-| 视频数据查询 | 查询播放、点赞、评论、分享等统计 | [`references/api-reference.md`](./references/api-reference.md) |
-| 商品查询 | 为 TTS 挂车发布提供商品列表 | [`references/api-reference.md`](./references/api-reference.md), [`docs/tts-product-cache.md`](./docs/tts-product-cache.md) |
+| 能力         | 作用                                          | 详细资料                                                                                                                   |
+| ------------ | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| 账号授权     | 获取 TT/TTS OAuth URL、回调绑定、拉取账号详情 | [`references/api-reference.md`](./references/api-reference.md), [`docs/oauth-callback.md`](./docs/oauth-callback.md)       |
+| 视频上传     | 先换上传凭证，再直传文件                      | [`references/api-reference.md`](./references/api-reference.md)                                                             |
+| 视频发布     | TT 普通发布或 TTS 挂车发布                    | [`references/api-reference.md`](./references/api-reference.md)                                                             |
+| 状态轮询     | 仅 TT 普通发布需要轮询                        | [`references/api-reference.md`](./references/api-reference.md), [`docs/tt-poll-task.md`](./docs/tt-poll-task.md)           |
+| 视频数据查询 | 查询播放、点赞、评论、分享等统计              | [`references/api-reference.md`](./references/api-reference.md)                                                             |
+| 商品查询     | 为 TTS 挂车发布提供商品列表                   | [`references/api-reference.md`](./references/api-reference.md), [`docs/tts-product-cache.md`](./docs/tts-product-cache.md) |
 
 ## 核心流程速记
 
@@ -128,19 +128,19 @@ interface OpenApiResponse<T> {
 
 这是主文件里最值得保留的部分，因为它决定了接口如何串起来：
 
-| 参数 | 含义 | 产出来源 |
-| --- | --- | --- |
-| `businessId` | TT 账号业务 ID | OAuth 回调参数 `ttAbId` |
-| `creatorUserOpenId` | TTS 账号 OpenId | OAuth 回调参数 `ttsAbId` |
-| `accountId` | 平台账号 ID | 即 `ttAbId` 或 `ttsAbId`，用于查询账号详情 |
-| `uploadToken` | 上传凭证 | `upload-token/generate` 返回 |
-| `fileUrl` | 普通上传后的视频 URL | `file-upload` 返回 |
-| `videoFileId` / `fileId` | TTS 视频文件 ID | `file-upload/tts-video` 返回 |
-| `shareId` | TT 普通发布追踪 ID | `tiktok/video/publish` 返回 |
-| `videoId` | TikTok 视频 ID | TTS 发布直接返回；TT 从状态查询 `post_ids[0]` 获取 |
-| `productId` | 商品 ID | `tts/products/query` 返回的商品列表 |
-| `productTitle` | 商品标题 | 同上，最多 29 字符，超出应先截断 |
-| `itemIds` | 视频 ID 数组 | 来源于 `videoId`，用于查询视频数据 |
+| 参数                     | 含义                 | 产出来源                                           |
+| ------------------------ | -------------------- | -------------------------------------------------- |
+| `businessId`             | TT 账号业务 ID       | OAuth 回调参数 `ttAbId`                            |
+| `creatorUserOpenId`      | TTS 账号 OpenId      | OAuth 回调参数 `ttsAbId`                           |
+| `accountId`              | 平台账号 ID          | 即 `ttAbId` 或 `ttsAbId`，用于查询账号详情         |
+| `uploadToken`            | 上传凭证             | `upload-token/generate` 返回                       |
+| `fileUrl`                | 普通上传后的视频 URL | `file-upload` 返回                                 |
+| `videoFileId` / `fileId` | TTS 视频文件 ID      | `file-upload/tts-video` 返回                       |
+| `shareId`                | TT 普通发布追踪 ID   | `tiktok/video/publish` 返回                        |
+| `videoId`                | TikTok 视频 ID       | TTS 发布直接返回；TT 从状态查询 `post_ids[0]` 获取 |
+| `productId`              | 商品 ID              | `tts/products/query` 返回的商品列表                |
+| `productTitle`           | 商品标题             | 同上，最多 29 字符，超出应先截断                   |
+| `itemIds`                | 视频 ID 数组         | 来源于 `videoId`，用于查询视频数据                 |
 
 ```text
 TT:
@@ -197,17 +197,17 @@ export BEERVID_APP_BASE_URL="https://open.beervid.ai"
 
 ### CLI 命令一览
 
-| 命令 | 功能 | 常用参数 |
-| --- | --- | --- |
-| `beervid config` | 设置或查看全局配置 | `--app-key`, `--base-url`, `--show` |
-| `beervid get-oauth-url` | 获取 OAuth 授权链接 | `--type tt|tts` |
-| `beervid get-account-info` | 查询账号信息 | `--type TT|TTS`, `--account-id` |
-| `beervid upload` | 上传视频 | `--file`, `--type tts`, `--creator-id`, `--token` |
-| `beervid publish` | 发布普通或挂车视频 | `--type normal|shoppable` 加对应业务参数 |
-| `beervid poll-status` | 轮询 TT 发布状态 | `--business-id`, `--share-id`, `--interval`, `--max-polls` |
-| `beervid query-video` | 查询视频数据 | `--business-id`, `--item-ids` |
-| `beervid query-products` | 查询 TTS 商品 | `--creator-id`, `--product-type`, `--cursor` |
-| `beervid publish-tt-flow` | 执行 TT 完整发布流程 | `--business-id`, `--file`, `--caption` |
+| 命令                       | 功能                  | 常用参数                                                                     |
+| -------------------------- | --------------------- | ---------------------------------------------------------------------------- | ------------------------- |
+| `beervid config`           | 设置或查看全局配置    | `--app-key`, `--base-url`, `--show`                                          |
+| `beervid get-oauth-url`    | 获取 OAuth 授权链接   | `--type tt                                                                   | tts`                      |
+| `beervid get-account-info` | 查询账号信息          | `--type TT                                                                   | TTS`, `--account-id`      |
+| `beervid upload`           | 上传视频              | `--file`, `--type tts`, `--creator-id`, `--token`                            |
+| `beervid publish`          | 发布普通或挂车视频    | `--type normal                                                               | shoppable` 加对应业务参数 |
+| `beervid poll-status`      | 轮询 TT 发布状态      | `--business-id`, `--share-id`, `--interval`, `--max-polls`                   |
+| `beervid query-video`      | 查询视频数据          | `--business-id`, `--item-ids`                                                |
+| `beervid query-products`   | 查询 TTS 商品         | `--creator-id`, `--product-type`, `--cursor`                                 |
+| `beervid publish-tt-flow`  | 执行 TT 完整发布流程  | `--business-id`, `--file`, `--caption`                                       |
 | `beervid publish-tts-flow` | 执行 TTS 完整发布流程 | `--creator-id`, `--file`, `--interactive`, `--product-id`, `--product-title` |
 
 ### 使用示例
@@ -225,13 +225,14 @@ beervid get-oauth-url --type tts
 # 查询账号信息
 beervid get-account-info --type TT --account-id 7281234567890
 
-# 上传普通视频
+# 上传普通视频（--file 同时支持本地文件路径和 URL 地址）
 beervid upload --file ./video.mp4
+beervid upload --file https://example.com/video.mp4
 
-# 上传 TTS 视频
+# 上传 TTS 视频（--file 同时支持本地文件路径和 URL 地址）
 beervid upload --file ./video.mp4 --type tts --creator-id=open_user_abc
 
-# 普通发布
+# 普通发布（--video-url 需要传可访问的视频 URL）
 beervid publish --type normal --business-id=biz_12345 --video-url https://cdn.beervid.ai/uploads/xxx.mp4 --caption "My video"
 
 # 挂车发布
@@ -246,24 +247,14 @@ beervid query-video --business-id=biz_12345 --item-ids 7123456789012345678
 # 查询商品
 beervid query-products --creator-id=open_user_abc
 
-# TT 一键完整流程
+# TT 一键完整流程（--file 同时支持本地文件路径和 URL 地址）
 beervid publish-tt-flow --business-id=biz_12345 --file ./video.mp4 --caption "My video"
+beervid publish-tt-flow --business-id=biz_12345 --file https://example.com/video.mp4 --caption "My video"
 
-# TTS 一键完整流程
+# TTS 一键完整流程（--file 同时支持本地文件路径和 URL 地址）
 beervid publish-tts-flow --creator-id=open_user_abc --file ./video.mp4
+beervid publish-tts-flow --creator-id=open_user_abc --file https://example.com/video.mp4
 ```
-
-### CLI 导航
-
-- 命令注册入口：[`src/cli.ts`](./src/cli.ts)
-- OAuth 相关：[`src/commands/oauth.ts`](./src/commands/oauth.ts)
-- 上传：[`src/commands/upload.ts`](./src/commands/upload.ts)
-- 发布：[`src/commands/publish.ts`](./src/commands/publish.ts)
-- TT 完整流程：[`src/commands/publish-tt-flow.ts`](./src/commands/publish-tt-flow.ts)
-- TTS 完整流程：[`src/commands/publish-tts-flow.ts`](./src/commands/publish-tts-flow.ts)
-- 状态轮询：[`src/commands/poll-status.ts`](./src/commands/poll-status.ts)
-- 数据查询：[`src/commands/query-video.ts`](./src/commands/query-video.ts)
-- 商品查询：[`src/commands/query-products.ts`](./src/commands/query-products.ts)
 
 ### CLI 特别注意
 

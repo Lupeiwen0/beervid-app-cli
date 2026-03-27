@@ -1,7 +1,7 @@
 import type { CAC } from 'cac'
 import { openApiPost, printResult } from '../client/index.js'
 import type { QueryVideoData, NormalizedVideoItem } from '../types/index.js'
-import { rethrowIfProcessExit } from './utils.js'
+import { getRawOptionValue, getRawOptionValues, rethrowIfProcessExit } from './utils.js'
 
 export function register(cli: CAC): void {
   cli
@@ -9,11 +9,14 @@ export function register(cli: CAC): void {
     .option('--business-id <id>', 'TT 账号 businessId（必填）')
     .option('--item-ids <ids>', '视频 ID，支持重复传参或逗号分隔（必填）')
     .action(
-      async (options: { businessId?: string; itemIds?: string | string[] }) => {
-        if (!options.businessId || !options.itemIds) {
+      async () => {
+        const businessId = getRawOptionValue(cli.rawArgs, '--business-id')
+        const rawItemIdArgs = getRawOptionValues(cli.rawArgs, '--item-ids')
+
+        if (!businessId || rawItemIdArgs.length === 0) {
           const missing = [
-            !options.businessId && '--business-id',
-            !options.itemIds && '--item-ids',
+            !businessId && '--business-id',
+            rawItemIdArgs.length === 0 && '--item-ids',
           ].filter(Boolean)
           console.error(`缺少必填参数: ${missing.join(', ')}\n`)
           console.error(
@@ -22,9 +25,7 @@ export function register(cli: CAC): void {
           process.exit(1)
         }
 
-        const itemIds = (Array.isArray(options.itemIds)
-          ? options.itemIds
-          : [options.itemIds])
+        const itemIds = rawItemIdArgs
           .flatMap((value) => value.split(','))
           .map((id) => id.trim())
           .filter(Boolean)
@@ -37,7 +38,7 @@ export function register(cli: CAC): void {
         try {
           console.log(`查询 ${itemIds.length} 个视频的数据...\n`)
           const data = await openApiPost<QueryVideoData>('/api/v1/open/tiktok/video/query', {
-            businessId: options.businessId,
+            businessId,
             itemIds,
           })
 

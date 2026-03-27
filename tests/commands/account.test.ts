@@ -52,4 +52,21 @@ describe('get-account-info command', () => {
     })
     expect(printResult).toHaveBeenCalledWith({ accountId: 'acct-1' })
   })
+
+  it('preserves large numeric account ids from raw argv', async () => {
+    openApiPost.mockResolvedValueOnce({ accountId: '7123456789012345678' })
+
+    const result = await runCommand(register, [
+      'get-account-info',
+      '--type',
+      'tt',
+      '--account-id=7123456789012345678',
+    ])
+
+    expect(result.exitCode).toBeUndefined()
+    expect(openApiPost).toHaveBeenCalledWith('/api/v1/open/account/info', {
+      accountType: 'TT',
+      accountId: '7123456789012345678',
+    })
+  })
 })

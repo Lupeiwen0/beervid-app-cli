@@ -85,4 +85,29 @@ describe('upload command', () => {
     )
     expect(printResult).toHaveBeenCalledWith({ videoFileId: 'file-1' })
   })
+
+  it('preserves large numeric creator ids from raw argv in tts upload', async () => {
+    const file = new File(['video'], 'video.mp4', { type: 'video/mp4' })
+    resolveFileInput.mockResolvedValueOnce(file)
+    openApiUpload.mockResolvedValueOnce({ videoFileId: 'file-1' })
+
+    const result = await runCommand(register, [
+      'upload',
+      '--file',
+      '/tmp/video.mp4',
+      '--type',
+      'tts',
+      '--creator-id=7123456789012345678',
+      '--token',
+      'token-raw',
+    ])
+
+    expect(result.exitCode).toBeUndefined()
+    expect(openApiUpload).toHaveBeenCalledWith(
+      '/api/v1/open/file-upload/tts-video',
+      expect.any(FormData),
+      { creatorUserOpenId: '7123456789012345678' },
+      { headerName: 'X-UPLOAD-TOKEN', headerValue: 'token-raw' }
+    )
+  })
 })

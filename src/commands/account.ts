@@ -1,6 +1,6 @@
 import type { CAC } from 'cac'
 import { openApiPost, printResult } from '../client/index.js'
-import { rethrowIfProcessExit } from './utils.js'
+import { getRawOptionValue, rethrowIfProcessExit } from './utils.js'
 
 export function register(cli: CAC): void {
   cli
@@ -8,8 +8,10 @@ export function register(cli: CAC): void {
     .option('--type <type>', '账号类型: TT 或 TTS')
     .option('--account-id <id>', '账号 ID')
     .action(async (options: { type?: string; accountId?: string }) => {
-      if (!options.type || !options.accountId) {
-        const missing = [!options.type && '--type', !options.accountId && '--account-id']
+      const accountId = getRawOptionValue(cli.rawArgs, '--account-id')
+
+      if (!options.type || !accountId) {
+        const missing = [!options.type && '--type', !accountId && '--account-id']
           .filter(Boolean)
           .join(', ')
         console.error(`缺少必填参数: ${missing}\n`)
@@ -26,7 +28,7 @@ export function register(cli: CAC): void {
       try {
         const data = await openApiPost<unknown>('/api/v1/open/account/info', {
           accountType,
-          accountId: options.accountId,
+          accountId,
         })
         printResult(data)
       } catch (err) {

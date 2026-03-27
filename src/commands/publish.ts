@@ -1,7 +1,7 @@
 import type { CAC } from 'cac'
 import { openApiPost, printResult } from '../client/index.js'
 import type { NormalPublishResult, ShoppablePublishResult } from '../types/index.js'
-import { rethrowIfProcessExit } from './utils.js'
+import { getRawOptionValue, rethrowIfProcessExit } from './utils.js'
 
 const MAX_PRODUCT_TITLE_LENGTH = 29
 const VALID_PUBLISH_TYPES = ['normal', 'shoppable']
@@ -31,6 +31,11 @@ export function register(cli: CAC): void {
         caption?: string
       }) => {
         const publishType = (options.type ?? 'normal').toLowerCase()
+        const businessId = getRawOptionValue(cli.rawArgs, '--business-id')
+        const creatorId = getRawOptionValue(cli.rawArgs, '--creator-id')
+        const fileId = getRawOptionValue(cli.rawArgs, '--file-id')
+        const productId = getRawOptionValue(cli.rawArgs, '--product-id')
+
         if (!VALID_PUBLISH_TYPES.includes(publishType)) {
           console.error('错误: --type 必须为 normal 或 shoppable')
           process.exit(1)
@@ -41,9 +46,9 @@ export function register(cli: CAC): void {
 
           if (publishType === 'shoppable') {
             const missing = [
-              !options.creatorId && '--creator-id',
-              !options.fileId && '--file-id',
-              !options.productId && '--product-id',
+              !creatorId && '--creator-id',
+              !fileId && '--file-id',
+              !productId && '--product-id',
               !options.productTitle && '--product-title',
             ].filter(Boolean)
 
@@ -67,10 +72,10 @@ export function register(cli: CAC): void {
             data = await openApiPost<ShoppablePublishResult>(
               '/api/v1/open/tts/shoppable-video/publish',
               {
-                creatorUserOpenId: options.creatorId!,
-                fileId: options.fileId!,
+                creatorUserOpenId: creatorId!,
+                fileId: fileId!,
                 title: options.caption ?? '',
-                productId: options.productId!,
+                productId: productId!,
                 productTitle,
               }
             )
@@ -78,7 +83,7 @@ export function register(cli: CAC): void {
             console.log('\n发布成功（挂车视频立即完成）:')
           } else {
             const missing = [
-              !options.businessId && '--business-id',
+              !businessId && '--business-id',
               !options.videoUrl && '--video-url',
             ].filter(Boolean)
 
@@ -94,7 +99,7 @@ export function register(cli: CAC): void {
             data = await openApiPost<NormalPublishResult>(
               '/api/v1/open/tiktok/video/publish',
               {
-                businessId: options.businessId!,
+                businessId: businessId!,
                 videoUrl: options.videoUrl!,
                 caption: options.caption ?? '',
               }
@@ -102,7 +107,7 @@ export function register(cli: CAC): void {
 
             console.log('\n发布已提交（需轮询状态）:')
             console.log(
-              `提示: 使用 beervid poll-status --business-id ${options.businessId!} --share-id ${(data as NormalPublishResult).shareId} 轮询进度`
+              `提示: 使用 beervid poll-status --business-id ${businessId!} --share-id ${(data as NormalPublishResult).shareId} 轮询进度`
             )
           }
 

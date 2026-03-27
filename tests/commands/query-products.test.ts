@@ -202,4 +202,31 @@ describe('query-products command', () => {
       },
     ])
   })
+
+  it('preserves large numeric creator ids from raw argv', async () => {
+    openApiPost.mockResolvedValueOnce({
+      productType: 'shop',
+      nextPageToken: null,
+      products: [],
+    })
+    openApiPost.mockResolvedValueOnce({
+      productType: 'showcase',
+      nextPageToken: null,
+      products: [],
+    })
+
+    const result = await runCommand(register, [
+      'query-products',
+      '--creator-id=7123456789012345678',
+    ])
+
+    expect(result.exitCode).toBeUndefined()
+    expect(openApiPost).toHaveBeenCalledWith('/api/v1/open/tts/products/query', {
+      creatorUserOpenId: '7123456789012345678',
+      productType: 'shop',
+      pageSize: 20,
+      pageToken: '',
+    })
+    expect(result.logs.some((line) => line.includes('已到最后一页'))).toBe(true)
+  })
 })

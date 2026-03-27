@@ -6,7 +6,7 @@ import {
   pollNormalVideoStatus,
   queryVideoWithRetry,
 } from '../workflows/index.js'
-import { rethrowIfProcessExit } from './utils.js'
+import { getRawOptionValue, rethrowIfProcessExit } from './utils.js'
 
 function parsePositiveInt(value: string | undefined, optionName: string, defaultValue: number): number {
   const parsed = parseInt(value ?? `${defaultValue}`, 10)
@@ -39,9 +39,11 @@ export function register(cli: CAC): void {
         queryInterval?: string
         queryMaxAttempts?: string
       }) => {
-        if (!options.businessId || !options.file) {
+        const businessId = getRawOptionValue(cli.rawArgs, '--business-id')
+
+        if (!businessId || !options.file) {
           const missing = [
-            !options.businessId && '--business-id',
+            !businessId && '--business-id',
             !options.file && '--file',
           ].filter(Boolean)
           console.error(`缺少必填参数: ${missing.join(', ')}\n`)
@@ -67,31 +69,17 @@ export function register(cli: CAC): void {
           const upload = await uploadNormalVideo(options.file, options.token)
 
           console.log('2/4 正在发布视频...')
-          const publish = await publishNormalVideo(
-            options.businessId,
-            upload.fileUrl,
-            options.caption
-          )
+          const publish = await publishNormalVideo(businessId, upload.fileUrl, options.caption)
 
           console.log('3/4 正在轮询发布状态...')
-          const status = await pollNormalVideoStatus(
-            options.businessId,
-            publish.shareId,
-            intervalSec,
-            maxPolls
-          )
+          const status = await pollNormalVideoStatus(businessId, publish.shareId, intervalSec, maxPolls)
 
           const videoId = status.postIds[0] ?? null
           let query = null
 
           if (status.finalStatus === 'PUBLISH_COMPLETE' && videoId) {
             console.log('4/4 正在查询视频数据...')
-            const queryResult = await queryVideoWithRetry(
-              options.businessId,
-              videoId,
-              queryIntervalSec,
-              queryMaxAttempts
-            )
+            const queryResult = await queryVideoWithRetry(businessId, videoId, queryIntervalSec, queryMaxAttempts)
             query = queryResult.query
             for (const warning of queryResult.warnings) {
               console.warn(warning.message)

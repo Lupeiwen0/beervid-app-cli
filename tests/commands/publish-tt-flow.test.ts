@@ -128,4 +128,41 @@ describe('publish-tt-flow command', () => {
 
     expect(result.exitCode).toBe(2)
   })
+
+  it('preserves large numeric business ids from raw argv', async () => {
+    uploadNormalVideo.mockResolvedValueOnce({ fileUrl: 'https://cdn/video.mp4' })
+    publishNormalVideo.mockResolvedValueOnce({ shareId: 'share-1' })
+    pollNormalVideoStatus.mockResolvedValueOnce({
+      pollCount: 1,
+      finalStatus: 'PUBLISH_COMPLETE',
+      reason: null,
+      postIds: ['video-1'],
+      raw: { status: 'PUBLISH_COMPLETE' },
+    })
+    queryVideoWithRetry.mockResolvedValueOnce({
+      query: { videoList: [{ itemId: 'video-1' }] },
+      warnings: [],
+    })
+
+    const result = await runCommand(register, [
+      'publish-tt-flow',
+      '--business-id=7123456789012345678',
+      '--file',
+      '/tmp/video.mp4',
+    ])
+
+    expect(result.exitCode).toBe(0)
+    expect(publishNormalVideo).toHaveBeenCalledWith(
+      '7123456789012345678',
+      'https://cdn/video.mp4',
+      undefined
+    )
+    expect(pollNormalVideoStatus).toHaveBeenCalledWith(
+      '7123456789012345678',
+      'share-1',
+      5,
+      60
+    )
+    expect(queryVideoWithRetry).toHaveBeenCalledWith('7123456789012345678', 'video-1', 5, 3)
+  })
 })

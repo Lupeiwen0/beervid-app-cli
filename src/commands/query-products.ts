@@ -2,7 +2,7 @@ import type { CAC } from 'cac'
 import { printResult } from '../client/index.js'
 import { decodeCursor, queryProductsPage } from '../workflows/index.js'
 import type { ProductType, ProductCursor } from '../types/index.js'
-import { rethrowIfProcessExit } from './utils.js'
+import { getRawOptionValue, rethrowIfProcessExit } from './utils.js'
 
 const VALID_PRODUCT_TYPES = ['shop', 'showcase', 'all']
 
@@ -20,13 +20,14 @@ export function register(cli: CAC): void {
         pageSize?: string
         cursor?: string
       }) => {
-        if (!options.creatorId) {
+        const creatorId = getRawOptionValue(cli.rawArgs, '--creator-id')
+
+        if (!creatorId) {
           console.error('缺少必填参数: --creator-id\n')
           console.error('用法: beervid query-products --creator-id <id>')
           process.exit(1)
         }
 
-        const creatorId = options.creatorId
         const productType = (options.productType ?? 'all').toLowerCase()
         const pageSize = parseInt(options.pageSize ?? '20', 10)
         const cursor = options.cursor ?? ''

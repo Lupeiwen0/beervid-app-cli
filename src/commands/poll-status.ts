@@ -1,7 +1,7 @@
 import type { CAC } from 'cac'
 import { openApiPost, printResult } from '../client/index.js'
 import type { VideoStatusData } from '../types/index.js'
-import { rethrowIfProcessExit } from './utils.js'
+import { getRawOptionValue, rethrowIfProcessExit } from './utils.js'
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -21,10 +21,13 @@ export function register(cli: CAC): void {
         interval?: string
         maxPolls?: string
       }) => {
-        if (!options.businessId || !options.shareId) {
+        const businessId = getRawOptionValue(cli.rawArgs, '--business-id')
+        const shareId = getRawOptionValue(cli.rawArgs, '--share-id')
+
+        if (!businessId || !shareId) {
           const missing = [
-            !options.businessId && '--business-id',
-            !options.shareId && '--share-id',
+            !businessId && '--business-id',
+            !shareId && '--share-id',
           ].filter(Boolean)
           console.error(`缺少必填参数: ${missing.join(', ')}\n`)
           console.error('用法: beervid poll-status --business-id <id> --share-id <id>')
@@ -44,15 +47,15 @@ export function register(cli: CAC): void {
 
         try {
           console.log(`开始轮询发布状态 (间隔 ${intervalSec}s, 最多 ${maxPolls} 次)`)
-          console.log(`businessId: ${options.businessId}`)
-          console.log(`shareId: ${options.shareId}\n`)
+          console.log(`businessId: ${businessId}`)
+          console.log(`shareId: ${shareId}\n`)
 
           let lastStatus = 'UNKNOWN'
 
           for (let i = 1; i <= maxPolls; i++) {
             const data = await openApiPost<VideoStatusData>('/api/v1/open/tiktok/video/status', {
-              businessId: options.businessId,
-              shareId: options.shareId,
+              businessId,
+              shareId,
             })
 
             const status = data.status ?? data.Status ?? 'UNKNOWN'
@@ -72,7 +75,7 @@ export function register(cli: CAC): void {
               console.log('发布成功!')
               console.log(`视频 ID: ${postIds[0]}`)
               console.log(
-                `提示: 使用 beervid query-video --business-id ${options.businessId} --item-ids ${postIds[0]} 查询数据`
+                `提示: 使用 beervid query-video --business-id ${businessId} --item-ids ${postIds[0]} 查询数据`
               )
               printResult(data)
               process.exit(0)

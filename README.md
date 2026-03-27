@@ -30,6 +30,29 @@ node dist/cli.mjs --help
 node dist/cli.mjs config --show
 ```
 
+### 在 Claude Code / Codex / Antigravity 中使用
+
+如果你希望在 Claude Code、Codex 等支持 Skill 的工具中直接调用本项目，除了通过 npm 安装 CLI 之外，还需要把 Skill 相关文件复制到你自己的 skills 目录下。
+
+需要复制的内容：
+
+- `SKILL.md`
+- `references/`
+- `docs/`
+- `example/`
+
+建议在你的 skills 目录中保持如下结构：
+
+```text
+beervid-app-cli/
+  SKILL.md
+  references/
+  docs/
+  example/
+```
+
+这样工具在加载 `SKILL.md` 时，才能继续访问本项目附带的 API 参考、落地文档和示例工程。
+
 ## 配置
 
 ```bash
