@@ -1,7 +1,0 @@
-interface:
-  display_name: "BEERVID App CLI"
-  short_description: "BEERVID third-party Open API CLI skill"
-  default_prompt: "Use $beervid-app-cli to implement or troubleshoot BEERVID third-party Open API flows for OAuth, TikTok publishing, status polling, and product queries."
-
-policy:
-  allow_implicit_invocation: true
