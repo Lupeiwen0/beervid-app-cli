@@ -35,7 +35,7 @@ node dist/cli.mjs config --show
 #### 方式一：通过 `npx skills add` 安装（推荐）
 
 ```bash
-npx skills add anthropics/beervid-app-cli
+npx skills add Lupeiwen0/beervid-app-cli
 ```
 
 安装后 Skill 会自动注册到你的 skills 目录中，Claude Code 等 Agent 即可发现和调用。
