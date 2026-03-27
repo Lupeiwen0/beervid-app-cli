@@ -2,6 +2,10 @@
   "name": "beervid-app-cli",
   "version": "0.2.5",
   "description": "BEERVID App CLI — TikTok video publish, account auth, and data query",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Lupeiwen0/beervid-app-cli"
+  },
   "type": "module",
   "engines": {
     "node": ">=20.0.0"
