@@ -16,8 +16,9 @@
 2. **用户跳转授权**：将用户重定向到返回的 URL
 3. **接收回调**：用户授权后，TikTok 回调你的服务器
 
-> **说明**：获取到的授权链接中通常已经包含 `state` 参数。
-> 如果你需要附加自定义安全字段，做法不是新增一个 `state` 参数，而是解析现有 `state`，在其 JSON 中追加字段后再写回授权链接。
+> **说明**：获取到的授权链接中**不一定**携带 `state` 参数。
+> - 如果链接中已经包含 `state`，它的值一定是一个 JSON 字符串。你可以解析该 JSON，在其中追加自定义字段后再写回。
+> - 如果链接中没有 `state`，而你需要透传参数（例如防 CSRF 的安全 token），应自行构造一个 JSON 对象作为 `state` 的值追加到授权链接上。
 
 ---
 
@@ -35,9 +36,11 @@ OAuth 授权完成后，回调 URL 会携带以下关键参数：
 
 ---
 
-## 获取授权链接后如何向已有 State 追加自定义字段
+## 获取授权链接后如何设置或追加 State
 
-如果获取到的授权链接里已经自带 `state`，并且它的值是一个 JSON 字符串，可以在拿到 OAuth URL 后解析这个 JSON，再把你方的安全 token 追加进去：
+授权链接中**可能包含也可能不包含** `state` 参数：
+- 如果已包含 `state`，其值是一个 JSON 字符串，可以解析后追加字段再写回。
+- 如果未包含 `state`，而你需要透传参数，应自行构造一个 JSON 对象设置为 `state`。
 
 ```typescript
 function tryParseJsonObject(value: string): Record<string, unknown> | null {
@@ -52,25 +55,25 @@ function tryParseJsonObject(value: string): Record<string, unknown> | null {
   }
 }
 
-function appendTokenToOAuthUrlState(
+function setOrAppendStateToken(
   rawUrl: string,
   customStateToken: string
 ): string {
   const url = new URL(rawUrl)
   const rawState = url.searchParams.get('state')
 
-  if (!rawState) {
-    throw new Error('授权链接中缺少 state 参数')
-  }
+  let nextState: Record<string, unknown>
 
-  const parsedState = tryParseJsonObject(rawState)
-  if (!parsedState) {
-    throw new Error('授权链接中的 state 不是可追加字段的 JSON 对象')
-  }
-
-  const nextState = {
-    ...parsedState,
-    customStateToken,
+  if (rawState) {
+    // 链接中已有 state，解析后追加字段
+    const parsedState = tryParseJsonObject(rawState)
+    if (!parsedState) {
+      throw new Error('授权链接中的 state 不是可追加字段的 JSON 对象')
+    }
+    nextState = { ...parsedState, customStateToken }
+  } else {
+    // 链接中没有 state，自行构造 JSON
+    nextState = { customStateToken }
   }
 
   url.searchParams.set('state', JSON.stringify(nextState))
@@ -80,7 +83,7 @@ function appendTokenToOAuthUrlState(
 async function getTtOAuthUrlWithState(userId: string): Promise<string> {
   const customStateToken = generateStateToken(userId)
   const rawUrl = await openApiGet<string>('/api/v1/open/thirdparty-auth/tt-url')
-  return appendTokenToOAuthUrlState(rawUrl, customStateToken)
+  return setOrAppendStateToken(rawUrl, customStateToken)
 }
 
 async function getTtsOAuthUrlWithState(userId: string): Promise<string> {
@@ -88,7 +91,7 @@ async function getTtsOAuthUrlWithState(userId: string): Promise<string> {
   const data = await openApiGet<{ crossBorderUrl: string }>(
     '/api/v1/open/thirdparty-auth/tts-url'
   )
-  return appendTokenToOAuthUrlState(data.crossBorderUrl, customStateToken)
+  return setOrAppendStateToken(data.crossBorderUrl, customStateToken)
 }
 ```
 
@@ -108,7 +111,7 @@ function parseCustomStateToken(state: string): string {
 ```
 
 > **说明**：字段名 `customStateToken` 只是示例，你也可以改成 `token`、`nonce`、`appState` 等业务上更合适的名字。
-> 如果授权链接里的 `state` 不是 JSON 对象，就不要按这个示例直接 `JSON.parse`；应改为使用平台允许的编码方式，或采用你当前链路已有的透传机制。
+> 无论链接中原先是否携带 `state`，你设置的 `state` 值都应该是一个 JSON 对象。
 
 ---
 
