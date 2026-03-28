@@ -182,10 +182,26 @@ app.get('/oauth/tts', async (_req, res) => {
 
 // OAuth 回调处理
 app.get('/oauth/callback', async (req, res) => {
-  const ttAbId = req.query['ttAbId'] as string | undefined
-  const ttsAbId = req.query['ttsAbId'] as string | undefined
+  const stateParam = req.query['state'] as string | undefined
 
-  // 生产环境：① 验证 state token ② 一次性消费检查
+  if (!stateParam) {
+    res.status(400).json({ error: '缺少 state 参数' })
+    return
+  }
+
+  // 回调字段在 state JSON 内部
+  let stateObj: Record<string, unknown>
+  try {
+    stateObj = JSON.parse(stateParam) as Record<string, unknown>
+  } catch {
+    res.status(400).json({ error: 'state 不是合法 JSON' })
+    return
+  }
+
+  const ttAbId = stateObj['ttAbId'] as string | undefined
+  const ttsAbId = stateObj['ttsAbId'] as string | undefined
+
+  // 生产环境：① 验证 state 中你方追加的自定义安全字段 ② 一次性消费检查
   // 详见 docs/oauth-callback.md
 
   if (!ttAbId && !ttsAbId) {
@@ -209,6 +225,8 @@ app.get('/oauth/callback', async (req, res) => {
   openApiPost('/api/v1/open/account/info', { accountType, accountId })
     .then((info) => {
       const existing = accountStore.get(accountId) ?? {}
+      // 生产环境建议在这里把 username 持久化，并作为当前推荐的 TT/TTS 关联键。
+      // 官方没有提供 uno_id 这类可直接关联 TT/TTS 的稳定字段。
       accountStore.set(accountId, { ...existing, ...info })
       console.log(`[异步] 账号信息已同步: ${accountId}`)
     })
@@ -300,8 +318,8 @@ app.post('/api/publish/tts', async (req, res) => {
   }
 
   try {
-    // 商品标题最多 29 字符
-    const normalizedTitle = productTitle.slice(0, 29)
+    // 商品标题最多 30 字符
+    const normalizedTitle = productTitle.slice(0, 30)
 
     // 挂车发布（不重试——发布操作非幂等）
     const publishResult = await openApiPost<{ videoId: string }>(

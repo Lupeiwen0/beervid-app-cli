@@ -56,3 +56,9 @@ curl -X POST http://localhost:3000/api/publish/tts \
   -H "Content-Type: application/json" \
   -d '{"creatorId": "open_user_abc", "videoFileId": "vf_abc123", "productId": "prod_789", "productTitle": "Widget"}'
 ```
+
+## 账号关联提醒
+
+- 如果同一达人既要做 TTS 挂车发布，又要查询视频数据，需要分别完成 TTS 和 TT 授权。
+- 官方当前没有提供 `uno_id` 这类 TT/TTS 关联字段。
+- 这个示例更推荐在 OAuth 回调后的 `account/info` 同步阶段持久化 `username`，并在你方数据库里用它建立 TT/TTS 关联。

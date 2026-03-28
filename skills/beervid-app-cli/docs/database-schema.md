@@ -35,6 +35,7 @@ CREATE TABLE beervid_accounts (
 
   -- 账号详情（来自 POST /api/v1/open/account/info）
   username        VARCHAR(256) DEFAULT NULL,
+  link_username   VARCHAR(256) DEFAULT NULL COMMENT '推荐的 TT/TTS 关联键（建议存归一化后的 username）',
   display_name    VARCHAR(256) DEFAULT NULL,
   seller_name     VARCHAR(256) DEFAULT NULL COMMENT 'TTS 账号的卖家名称',
   profile_url     TEXT         DEFAULT NULL COMMENT '头像 URL',
@@ -57,7 +58,8 @@ CREATE TABLE beervid_accounts (
   UNIQUE KEY uk_account (account_type, account_id),
   KEY idx_app_user (app_user_id),
   KEY idx_business_id (business_id),
-  KEY idx_creator_user_open_id (creator_user_open_id)
+  KEY idx_creator_user_open_id (creator_user_open_id),
+  KEY idx_link_username (link_username)
 );
 ```
 
@@ -68,8 +70,16 @@ CREATE TABLE beervid_accounts (
 | `account_id` | OAuth 回调参数 `ttAbId` 或 `ttsAbId` | 唯一标识，与 `account_type` 组成唯一键 |
 | `business_id` | 等同于 `ttAbId` | TT 账号的所有操作（发布、轮询、查数据）都以此为入参 |
 | `creator_user_open_id` | 等同于 `ttsAbId` | TTS 账号的所有操作（上传、发布、查商品）都以此为入参 |
+| `link_username` | `account/info` 返回的 `username` 归一化后保存 | 当前推荐用作 TT/TTS 的关联键；官方暂无 `uno_id` |
 | `access_token` | `account/info` 返回 | 按需存储，用于特殊场景 |
 | `app_user_id` | 你方系统 | 一个用户可绑定多个 TT/TTS 账号 |
+
+### TT / TTS 关联建议
+
+- 同一达人如果既授权了 TTS，又授权了 TT，建议保存为两条账号记录。
+- 官方当前没有提供 `uno_id` 这类 TT/TTS 强关联字段。
+- 推荐额外维护 `link_username`，例如保存 `LOWER(TRIM(username))` 后的值，作为当前最稳妥的软关联键。
+- 真正调用接口时不要使用 `link_username` 替代业务 ID；TT 继续使用 `business_id`，TTS 继续使用 `creator_user_open_id`。
 
 ---
 
@@ -98,7 +108,7 @@ CREATE TABLE beervid_videos (
 
   -- TTS 挂车专用
   product_id      VARCHAR(128) DEFAULT NULL COMMENT '关联商品 ID',
-  product_title   VARCHAR(64)  DEFAULT NULL COMMENT '关联商品标题（≤29字符）',
+  product_title   VARCHAR(64)  DEFAULT NULL COMMENT '关联商品标题（≤30字符）',
 
   -- 发布状态
   publish_status  VARCHAR(32)  DEFAULT 'PENDING'

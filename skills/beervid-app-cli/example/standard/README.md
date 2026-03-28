@@ -49,3 +49,9 @@ npx tsx query-products.ts --creator-id open_user_abc
 | `tts-publish-flow.ts` | ⭐ TTS 完整发布流程最佳实践（含商品筛选策略） |
 | `get-oauth-url.ts` | 获取 TT/TTS OAuth 授权 URL |
 | `query-products.ts` | TTS 商品查询与分页遍历 |
+
+## 账号关联提醒
+
+- TTS 账号不能直接查询视频数据。
+- 如果同一达人既要跑 `tts-publish-flow.ts`，又要查视频数据，还需要额外授权 TT 账号。
+- 官方当前没有提供 `uno_id` 可直接关联 TT/TTS，示例项目当前推荐使用 `account/info` 返回的 `username` 做关联。

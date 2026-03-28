@@ -64,6 +64,16 @@ export interface NormalPublishResult {
   [key: string]: unknown
 }
 
+export interface NormalPublishOptions {
+  caption?: string
+  isBrandOrganic?: boolean
+  isBrandedContent?: boolean
+  disableComment?: boolean
+  disableDuet?: boolean
+  disableStitch?: boolean
+  thumbnailOffset?: number
+}
+
 export interface ShoppablePublishResult {
   videoId: string
   [key: string]: unknown

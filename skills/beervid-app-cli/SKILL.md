@@ -83,6 +83,14 @@ interface OpenApiResponse<T> {
 - 发布挂车视频时依赖商品信息
 - 发布后通常立即完成，不走 TT 的轮询链路
 
+### TT / TTS 关联场景
+
+- TTS 账号本身不支持视频数据查询。
+- 如果同一达人既要挂车发布，又要查询视频播放/点赞/评论等数据，必须同时完成 TTS 授权和 TT 授权。
+- 官方当前没有提供 `uno_id` 之类可直接打通 TT/TTS 的关联字段。
+- 当前推荐在两边授权完成后，调用 `account/info` 拉取账号详情，并以 `username` 作为你方系统内的关联键。
+- 关联完成后，发布挂车继续使用 `creatorUserOpenId`，查询视频数据使用对应 TT 账号的 `businessId`。
+
 ## 六类核心能力
 
 只保留能力定位，详细接口说明去看引用文档：
@@ -102,7 +110,7 @@ interface OpenApiResponse<T> {
 
 ```text
 获取 TT OAuth URL
-  -> 用户授权回调得到 ttAbId
+  -> 用户授权回调，从 `state` JSON 中解析得到 ttAbId
   -> ttAbId 作为 businessId 持久化
   -> 获取上传凭证
   -> 上传普通视频，拿到 fileUrl
@@ -116,12 +124,28 @@ interface OpenApiResponse<T> {
 
 ```text
 获取 TTS OAuth URL
-  -> 用户授权回调得到 ttsAbId
+  -> 用户授权回调，从 `state` JSON 中解析得到 ttsAbId
   -> ttsAbId 作为 creatorUserOpenId 持久化
   -> 查询商品，得到 productId + productTitle
   -> 获取上传凭证
   -> 上传 TTS 视频，拿到 videoFileId/fileId
   -> 发布挂车视频
+```
+
+### 同一达人既要挂车发布又要查视频数据
+
+```text
+先授权 TTS
+  -> 得到 ttsAbId -> 持久化为 creatorUserOpenId
+  -> 调用 account/info -> 记录 TTS username
+
+再授权 TT
+  -> 得到 ttAbId -> 持久化为 businessId
+  -> 调用 account/info -> 记录 TT username
+
+用 username 在你方系统中建立 TT <-> TTS 关联
+  -> 挂车发布时使用 creatorUserOpenId
+  -> 视频查数时使用 businessId
 ```
 
 ## 关键参数链路
@@ -130,16 +154,17 @@ interface OpenApiResponse<T> {
 
 | 参数                     | 含义                 | 产出来源                                           |
 | ------------------------ | -------------------- | -------------------------------------------------- |
-| `businessId`             | TT 账号业务 ID       | OAuth 回调参数 `ttAbId`                            |
-| `creatorUserOpenId`      | TTS 账号 OpenId      | OAuth 回调参数 `ttsAbId`                           |
+| `businessId`             | TT 账号业务 ID       | OAuth 回调 `state` JSON 中的 `ttAbId`              |
+| `creatorUserOpenId`      | TTS 账号 OpenId      | OAuth 回调 `state` JSON 中的 `ttsAbId`             |
 | `accountId`              | 平台账号 ID          | 即 `ttAbId` 或 `ttsAbId`，用于查询账号详情         |
+| `username`               | 账号用户名           | `account/info` 返回；当前推荐作为 TT/TTS 关联键    |
 | `uploadToken`            | 上传凭证             | `upload-token/generate` 返回                       |
 | `fileUrl`                | 普通上传后的视频 URL | `file-upload` 返回                                 |
 | `videoFileId` / `fileId` | TTS 视频文件 ID      | `file-upload/tts-video` 返回                       |
 | `shareId`                | TT 普通发布追踪 ID   | `tiktok/video/publish` 返回                        |
 | `videoId`                | TikTok 视频 ID       | TTS 发布直接返回；TT 从状态查询 `post_ids[0]` 获取 |
 | `productId`              | 商品 ID              | `tts/products/query` 返回的商品列表                |
-| `productTitle`           | 商品标题             | 同上，最多 29 字符，超出应先截断                   |
+| `productTitle`           | 商品标题             | 同上，最多 30 字符，超出应先截断                   |
 | `itemIds`                | 视频 ID 数组         | 来源于 `videoId`，用于查询视频数据                 |
 
 ```text
@@ -173,8 +198,9 @@ creatorUserOpenId -> upload-tts-video -> fileId -> shoppable-publish -> videoId
 ### 常见业务约束
 
 - TT 普通视频发布后需要轮询；只有 `PUBLISH_COMPLETE` 且 `post_ids` 非空才算成功完成；TTS 挂车视频通常不需要
-- 仅 TT 授权账号可查询视频数据
-- `productTitle` 最多 29 字符，超出时应提前截断
+- 仅 TT 授权账号可查询视频数据；TTS-only 账号不能查数
+- 如果同一达人既要 TTS 挂车发布又要查视频数据，必须额外授权 TT；当前推荐以 `username` 关联 TT/TTS，不能依赖官方 `uno_id`
+- `productTitle` 最多 30 字符，超出时应提前截断
 - 商品图片字段可能是特殊字符串格式，解析细节见 [`docs/tts-product-cache.md`](./docs/tts-product-cache.md)
 - 视频查询接口可能同时返回 camelCase 与 snake_case 字段，兼容细节见 [`references/api-reference.md`](./references/api-reference.md)
 
@@ -209,7 +235,7 @@ export BEERVID_APP_BASE_URL="https://open.beervid.ai"
 | `beervid upload`           | 上传视频              | `--file`, `--type tts`, `--creator-id`, `--token`                            |
 | `beervid publish`          | 发布普通或挂车视频    | `--type normal                                                               | shoppable` 加对应业务参数 |
 | `beervid poll-status`      | 轮询 TT 发布状态      | `--business-id`, `--share-id`, `--interval`, `--max-polls`                   |
-| `beervid query-video`      | 查询视频数据          | `--business-id`, `--item-ids`                                                |
+| `beervid query-video`      | 查询视频数据          | `--business-id`, `--item-ids`, `--cursor`, `--max-count`                     |
 | `beervid query-products`   | 查询 TTS 商品         | `--creator-id`, `--product-type`, `--cursor`                                 |
 | `beervid publish-tt-flow`  | 执行 TT 完整发布流程  | `--business-id`, `--file`, `--caption`                                       |
 | `beervid publish-tts-flow` | 执行 TTS 完整发布流程 | `--creator-id`, `--file`, `--interactive`, `--product-id`, `--product-title` |
@@ -247,6 +273,7 @@ beervid poll-status --business-id=biz_12345 --share-id share_abc123
 
 # 查询视频数据
 beervid query-video --business-id=biz_12345 --item-ids 7123456789012345678
+beervid query-video --business-id=biz_12345 --cursor 0 --max-count 20
 
 # 查询商品
 beervid query-products --creator-id=open_user_abc
@@ -265,6 +292,13 @@ beervid publish-tts-flow --creator-id=open_user_abc --file https://example.com/v
 当参数值本身以 `-` 开头时，必须写成 `--option=value`，否则 CLI 会把值误判为新的选项。
 
 ## 读哪份文档
+
+### 快速开始
+
+如果你是第一次接触 BEERVID Open API，从这里开始：
+
+- **5 分钟快速上手**：[`QUICKSTART.md`](./QUICKSTART.md) - 从零到发布第一个视频
+- **常见问题**：[`FAQ.md`](./FAQ.md) - 快速查找常见问题的答案
 
 ### 接口细节
 
@@ -286,9 +320,18 @@ beervid publish-tts-flow --creator-id=open_user_abc --file https://example.com/v
 - TTS 商品缓存：[`docs/tts-product-cache.md`](./docs/tts-product-cache.md)
 - 重试与幂等：[`docs/retry-and-idempotency.md`](./docs/retry-and-idempotency.md)
 
+### 运维与优化
+
+生产环境部署和优化指南：
+
+- **性能与限流**：[`docs/performance-and-limits.md`](./docs/performance-and-limits.md) - API 限流策略、并发控制、性能优化
+- **安全最佳实践**：[`docs/security-best-practices.md`](./docs/security-best-practices.md) - API Key 安全、OAuth 安全、生产环境检查清单
+- **故障排查**：[`docs/troubleshooting.md`](./docs/troubleshooting.md) - 常见错误及解决方案、调试技巧
+- **测试指南**：[`docs/testing-guide.md`](./docs/testing-guide.md) - 单元测试、集成测试、Mock 数据
+
 ### 示例工程
 
-当用户需要“可运行参考实现”时，按技术栈读取：
+当用户需要”可运行参考实现”时，按技术栈读取：
 
 - 纯脚本示例：[`example/standard/README.md`](./example/standard/README.md)
 - Express 示例：[`example/express/README.md`](./example/express/README.md)

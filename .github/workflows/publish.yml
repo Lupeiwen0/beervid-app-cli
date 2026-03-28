@@ -16,13 +16,18 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           registry-url: https://registry.npmjs.org
 
       - run: npm ci
 
       - name: Set version from tag
-        run: npm version "$GITHUB_REF_NAME" --no-git-tag-version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          npm version "$VERSION" --no-git-tag-version
+
+      - name: Sync skill version from package.json
+        run: npm run sync:skill-version
 
       - run: npm run build
 

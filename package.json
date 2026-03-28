@@ -7,8 +7,15 @@
     "url": "https://github.com/Lupeiwen0/beervid-app-cli"
   },
   "type": "module",
+  "types": "dist/index.d.ts",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs"
+    }
   },
   "bin": {
     "beervid": "dist/cli.mjs"
@@ -23,6 +30,8 @@
     "dev": "tsx src/cli.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
+    "sync:skill-version": "node scripts/sync-skill-version.mjs",
+    "version": "npm run sync:skill-version",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {

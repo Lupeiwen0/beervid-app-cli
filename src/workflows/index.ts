@@ -3,6 +3,7 @@ import { stdin as input, stdout as output } from 'node:process'
 import { openApiPost } from '../client/index.js'
 import type {
   NormalPublishResult,
+  NormalPublishOptions,
   ShoppablePublishResult,
   VideoStatusData,
   QueryVideoData,
@@ -21,7 +22,7 @@ export {
   uploadTtsVideo,
 } from '../utils/upload.js'
 
-const MAX_PRODUCT_TITLE_LENGTH = 29
+const MAX_PRODUCT_TITLE_LENGTH = 30
 
 export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -30,13 +31,22 @@ export function sleep(ms: number): Promise<void> {
 export async function publishNormalVideo(
   businessId: string,
   videoUrl: string,
-  caption?: string
+  options: NormalPublishOptions = {}
 ): Promise<NormalPublishResult> {
-  return openApiPost<NormalPublishResult>('/api/v1/open/tiktok/video/publish', {
+  const body: Record<string, unknown> = {
     businessId,
     videoUrl,
-    caption: caption ?? '',
-  })
+    caption: options.caption ?? '',
+  }
+
+  if (options.isBrandOrganic !== undefined) body.isBrandOrganic = options.isBrandOrganic
+  if (options.isBrandedContent !== undefined) body.isBrandedContent = options.isBrandedContent
+  if (options.disableComment !== undefined) body.disableComment = options.disableComment
+  if (options.disableDuet !== undefined) body.disableDuet = options.disableDuet
+  if (options.disableStitch !== undefined) body.disableStitch = options.disableStitch
+  if (options.thumbnailOffset !== undefined) body.thumbnailOffset = options.thumbnailOffset
+
+  return openApiPost<NormalPublishResult>('/api/v1/open/tiktok/video/publish', body)
 }
 
 export async function publishTtsVideo(
@@ -208,6 +218,7 @@ export async function queryProductsPage(
   successCount: number
   failedSources: string[]
 }> {
+  const normalizedPageSize = Math.min(Math.max(pageSize, 1), 20)
   const allTypesToQuery = productType === 'all' ? ['shop', 'showcase'] : [productType]
   // Skip sources whose token is null — they already reached the last page
   const typesToQuery = allTypesToQuery.filter((type) => {
@@ -227,7 +238,7 @@ export async function queryProductsPage(
       const data = await openApiPost<ProductPageData>('/api/v1/open/tts/products/query', {
         creatorUserOpenId: creatorId,
         productType: type,
-        pageSize,
+        pageSize: normalizedPageSize,
         pageToken: pageToken ?? '',
       })
       return { type, data }
@@ -305,13 +316,14 @@ export async function fetchProductPool(
 }> {
   const allProducts = new Map<string, NormalizedProductItem>()
   const rawGroups: ProductPageData[] = []
+  const normalizedPageSize = Math.min(Math.max(pageSize, 1), 20)
   let cursor: ProductCursor = { shopToken: '', showcaseToken: '' } // empty string = first page
   let nextCursor: string | null = null
   let pagesScanned = 0
   const failedSourcesSet = new Set<string>()
 
   for (let page = 1; page <= maxPages; page++) {
-    const pageResult = await queryProductsPage(creatorId, productType, pageSize, cursor)
+    const pageResult = await queryProductsPage(creatorId, productType, normalizedPageSize, cursor)
     if (pageResult.successCount === 0) {
       throw new Error('所有商品源都请求失败')
     }
@@ -341,7 +353,7 @@ export async function fetchProductPool(
     rawGroups,
     summary: {
       productType,
-      pageSize,
+      pageSize: normalizedPageSize,
       pagesScanned,
       productCount: allProducts.size,
       nextCursor,

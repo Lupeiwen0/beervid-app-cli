@@ -46,6 +46,21 @@ describe('publish-tt-flow command', () => {
     expect(result.errors).toContain('错误: --interval 必须为大于 0 的整数')
   })
 
+  it('fails when thumbnail-offset is not an integer', async () => {
+    const result = await runCommand(register, [
+      'publish-tt-flow',
+      '--business-id',
+      'biz-1',
+      '--file',
+      '/tmp/video.mp4',
+      '--thumbnail-offset',
+      '2.5',
+    ])
+
+    expect(result.exitCode).toBe(1)
+    expect(result.errors).toContain('错误: --thumbnail-offset 必须为整数')
+  })
+
   it('completes the full tt workflow and exits with 0', async () => {
     uploadNormalVideo.mockResolvedValueOnce({ fileUrl: 'https://cdn/video.mp4' })
     publishNormalVideo.mockResolvedValueOnce({ shareId: 'share-1' })
@@ -73,7 +88,9 @@ describe('publish-tt-flow command', () => {
 
     expect(result.exitCode).toBe(0)
     expect(uploadNormalVideo).toHaveBeenCalledWith('/tmp/video.mp4', undefined)
-    expect(publishNormalVideo).toHaveBeenCalledWith('biz-1', 'https://cdn/video.mp4', 'hello')
+    expect(publishNormalVideo).toHaveBeenCalledWith('biz-1', 'https://cdn/video.mp4', {
+      caption: 'hello',
+    })
     expect(pollNormalVideoStatus).toHaveBeenCalledWith('biz-1', 'share-1', 5, 60)
     expect(queryVideoWithRetry).toHaveBeenCalledWith('biz-1', 'video-1', 5, 3)
     expect(printResult).toHaveBeenCalledWith({
@@ -155,7 +172,7 @@ describe('publish-tt-flow command', () => {
     expect(publishNormalVideo).toHaveBeenCalledWith(
       '7123456789012345678',
       'https://cdn/video.mp4',
-      undefined
+      { caption: undefined }
     )
     expect(pollNormalVideoStatus).toHaveBeenCalledWith(
       '7123456789012345678',
@@ -164,5 +181,47 @@ describe('publish-tt-flow command', () => {
       60
     )
     expect(queryVideoWithRetry).toHaveBeenCalledWith('7123456789012345678', 'video-1', 5, 3)
+  })
+
+  it('passes official TT publish options through the full flow', async () => {
+    uploadNormalVideo.mockResolvedValueOnce({ fileUrl: 'https://cdn/video.mp4' })
+    publishNormalVideo.mockResolvedValueOnce({ shareId: 'share-1' })
+    pollNormalVideoStatus.mockResolvedValueOnce({
+      pollCount: 1,
+      finalStatus: 'PUBLISH_COMPLETE',
+      reason: null,
+      postIds: ['video-1'],
+      raw: { status: 'PUBLISH_COMPLETE' },
+    })
+    queryVideoWithRetry.mockResolvedValueOnce({
+      query: { videoList: [{ itemId: 'video-1' }] },
+      warnings: [],
+    })
+
+    const result = await runCommand(register, [
+      'publish-tt-flow',
+      '--business-id',
+      'biz-1',
+      '--file',
+      '/tmp/video.mp4',
+      '--brand-organic',
+      '--branded-content',
+      '--disable-comment',
+      '--disable-duet',
+      '--disable-stitch',
+      '--thumbnail-offset',
+      '8',
+    ])
+
+    expect(result.exitCode).toBe(0)
+    expect(publishNormalVideo).toHaveBeenCalledWith('biz-1', 'https://cdn/video.mp4', {
+      caption: undefined,
+      isBrandOrganic: true,
+      isBrandedContent: true,
+      disableComment: true,
+      disableDuet: true,
+      disableStitch: true,
+      thumbnailOffset: 8,
+    })
   })
 })

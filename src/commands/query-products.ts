@@ -2,7 +2,7 @@ import type { CAC } from 'cac'
 import { printResult } from '../client/index.js'
 import { decodeCursor, queryProductsPage } from '../workflows/index.js'
 import type { ProductType, ProductCursor } from '../types/index.js'
-import { getRawOptionValue, rethrowIfProcessExit } from './utils.js'
+import { getRawOptionValue, parseStrictInteger, rethrowIfProcessExit } from './utils.js'
 
 const VALID_PRODUCT_TYPES = ['shop', 'showcase', 'all']
 
@@ -29,15 +29,15 @@ export function register(cli: CAC): void {
         }
 
         const productType = (options.productType ?? 'all').toLowerCase()
-        const pageSize = parseInt(options.pageSize ?? '20', 10)
+        const pageSize = parseStrictInteger(options.pageSize ?? '20', '--page-size')
         const cursor = options.cursor ?? ''
 
         if (!VALID_PRODUCT_TYPES.includes(productType)) {
           console.error('错误: --product-type 必须为 shop、showcase 或 all')
           process.exit(1)
         }
-        if (Number.isNaN(pageSize) || pageSize <= 0) {
-          console.error('错误: --page-size 必须为大于 0 的整数')
+        if (pageSize === undefined || pageSize <= 0 || pageSize > 20) {
+          console.error('错误: --page-size 必须为 1 到 20 之间的整数')
           process.exit(1)
         }
 

@@ -1,0 +1,36 @@
+{
+  "name": "beervid-app-cli",
+  "version": "0.2.5",
+  "description": "BEERVID 第三方应用 Open API 集成开发指南，支持 TikTok 视频发布、账号授权、数据查询等完整能力",
+  "author": "Lupeiwen0",
+  "repository": "https://github.com/Lupeiwen0/beervid-app-cli",
+  "license": "MIT",
+  "keywords": [
+    "beervid",
+    "tiktok",
+    "video-publishing",
+    "oauth",
+    "api-client",
+    "tts",
+    "tiktok-shop"
+  ],
+  "main": "SKILL.md",
+  "files": [
+    "SKILL.md",
+    "QUICKSTART.md",
+    "FAQ.md",
+    "references/",
+    "docs/",
+    "example/"
+  ],
+  "dependencies": {
+    "beervid-app-cli": "^0.2.5"
+  },
+  "skillMetadata": {
+    "category": "api-integration",
+    "platform": "beervid",
+    "apiVersion": "v1",
+    "requiresAuth": true,
+    "authType": "api-key"
+  }
+}

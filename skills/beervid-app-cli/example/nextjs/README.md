@@ -52,3 +52,9 @@ npm run dev
 - `lib/beervid-client.ts` — 服务端 BEERVID API 客户端封装
 - `app/api/` — API Route Handlers
 - `app/page.tsx` — 简单首页展示 API 调用方式
+
+## 账号关联提醒
+
+- TTS 账号只能用于挂车发布和商品查询，不能直接查视频数据。
+- 如果同一达人还要查视频数据，需要额外完成 TT 授权。
+- 官方当前没有提供 `uno_id` 这类 TT/TTS 关联字段，建议在 OAuth 回调后调用 `account/info`，并用返回的 `username` 建立本地关联。

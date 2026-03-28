@@ -24,15 +24,55 @@
 
 ## 回调参数
 
-OAuth 授权完成后，回调 URL 会携带以下关键参数：
+OAuth 授权完成后，回调 URL 会携带 `state` 查询参数，其值是一个 **JSON 字符串**。业务字段包含在这个 JSON 内部：
 
-| 账号类型 | 回调参数 | 含义 | 后续用途 |
+```
+回调 URL 示例：
+https://your-app.com/callback?state={"ttAbId":"xxx","code":"yyy",...}
+```
+
+从 `state` JSON 中提取的关键字段：
+
+| 账号类型 | 字段 | 含义 | 后续用途 |
 |----------|----------|------|----------|
 | TT | `ttAbId` | TT 账号的 businessId | 所有 TT 操作的入参 |
 | TTS | `ttsAbId` | TTS 账号的 creatorUserOpenId | 所有 TTS 操作的入参 |
 
 > **重要**：`ttAbId` 就是后续所有 TT API 的 `businessId`，`ttsAbId` 就是所有 TTS API 的 `creatorUserOpenId`。
 > 这两个值必须可靠持久化，丢失意味着需要用户重新授权。
+
+## TT / TTS 账号关联建议
+
+如果同一达人既要做 TTS 挂车发布，又要查询视频数据，建议按下面方式建模：
+
+- TTS 授权和 TT 授权分别落成两条独立账号记录，不要混存成一条。
+- 回调阶段先持久化 `ttAbId` / `ttsAbId`，再异步调用 `account/info` 补全账号详情。
+- 官方当前没有提供 `uno_id` 这类可直接打通 TT/TTS 的稳定字段。
+- 当前推荐使用 `account/info` 返回的 `username` 作为关联键，在你方系统里建立 TT 和 TTS 的软关联。
+- 业务调用时不要把 `username` 当接口入参；挂车发布仍使用 `creatorUserOpenId`，视频查数仍使用 `businessId`。
+
+### 解析 state 中的回调字段
+
+```typescript
+interface OAuthCallbackState {
+  ttAbId?: string
+  ttsAbId?: string
+  code?: string
+  [key: string]: unknown  // 可能包含你之前追加的自定义字段
+}
+
+function parseCallbackState(stateParam: string): OAuthCallbackState {
+  try {
+    const parsed = JSON.parse(stateParam) as unknown
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as OAuthCallbackState
+    }
+    throw new Error('state 不是合法 JSON 对象')
+  } catch {
+    throw new Error('state 解析失败')
+  }
+}
+```
 
 ---
 
@@ -181,35 +221,44 @@ async function consumeStateNonce(nonce: string): Promise<boolean> {
 ```typescript
 async function handleOAuthCallback(req: Request): Promise<Response> {
   const url = new URL(req.url)
-  const state = url.searchParams.get('state')
-  const ttAbId = url.searchParams.get('ttAbId')
-  const ttsAbId = url.searchParams.get('ttsAbId')
+  const stateParam = url.searchParams.get('state')
 
-  // ① 验证 State Token
-  if (!state) {
+  // ① 解析 state JSON，提取回调字段
+  if (!stateParam) {
     return new Response('缺少 state 参数', { status: 400 })
   }
 
-  let statePayload: { userId: string; nonce: string }
+  let stateObj: OAuthCallbackState
   try {
-    statePayload = verifyStateToken(state)
-  } catch (err) {
-    return new Response('授权链接已过期，请重新发起授权', { status: 403 })
+    stateObj = parseCallbackState(stateParam)
+  } catch {
+    return new Response('state 解析失败', { status: 400 })
   }
 
-  // ② 一次性消费检查
-  const isFirstUse = await consumeStateNonce(statePayload.nonce)
-  if (!isFirstUse) {
-    return new Response('该授权回调已处理过，请勿重复提交', { status: 409 })
+  const { ttAbId, ttsAbId } = stateObj
+
+  // ② 验证你方追加的自定义安全字段（如果有）
+  if (stateObj.customStateToken) {
+    let statePayload: { userId: string; nonce: string }
+    try {
+      statePayload = verifyStateToken(stateObj.customStateToken)
+    } catch (err) {
+      return new Response('授权链接已过期，请重新发起授权', { status: 403 })
+    }
+
+    // ③ 一次性消费检查
+    const isFirstUse = await consumeStateNonce(statePayload.nonce)
+    if (!isFirstUse) {
+      return new Response('该授权回调已处理过，请勿重复提交', { status: 409 })
+    }
   }
 
-  // ③ 判断账号类型并持久化
+  // ④ 判断账号类型并持久化
   if (ttAbId) {
     await saveAccount({
       accountType: 'TT',
       accountId: ttAbId,
       businessId: ttAbId,
-      appUserId: statePayload.userId,
       status: 'ACTIVE',
     })
   }
@@ -219,21 +268,19 @@ async function handleOAuthCallback(req: Request): Promise<Response> {
       accountType: 'TTS',
       accountId: ttsAbId,
       creatorUserOpenId: ttsAbId,
-      appUserId: statePayload.userId,
       status: 'ACTIVE',
     })
   }
 
-  // ④ 异步拉取账号详情（不阻塞回调响应）
+  // ⑤ 异步拉取账号详情（不阻塞回调响应）
   const accountId = ttAbId || ttsAbId
   const accountType = ttAbId ? 'TT' : 'TTS'
 
-  // 使用 fire-and-forget 或投递到消息队列
   syncAccountInfoAsync(accountType, accountId!).catch((err) => {
     console.error('异步同步账号信息失败（不影响授权结果）:', err.message)
   })
 
-  // ⑤ 返回成功页面或重定向
+  // ⑥ 返回成功页面或重定向
   return Response.redirect('/dashboard?oauth=success', 302)
 }
 ```
@@ -248,6 +295,7 @@ async function handleOAuthCallback(req: Request): Promise<Response> {
 - 回调请求应快速响应，避免用户长时间等待
 - 头像同步等操作允许延迟几秒完成
 - 即使同步失败，授权本身已成功
+- 如果要关联同一达人的 TT / TTS 账号，建议在这里同步并持久化 `username`
 
 ```typescript
 async function syncAccountInfoAsync(
@@ -261,6 +309,7 @@ async function syncAccountInfoAsync(
 
   await updateAccount(accountId, {
     username: data.username,
+    linkUsername: data.username?.trim().toLowerCase(),
     displayName: data.displayName,
     sellerName: data.sellerName,
     profileUrl: data.profileUrl,

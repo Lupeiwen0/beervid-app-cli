@@ -39,3 +39,21 @@ export function getRawOptionValue(
 ): string | undefined {
   return getRawOptionValues(rawArgs, optionName).at(-1)
 }
+
+export function parseStrictInteger(value: unknown, optionName: string): number | undefined {
+  if (value === undefined) return undefined
+
+  const normalized = String(value).trim()
+  if (!/^-?\d+$/.test(normalized)) {
+    console.error(`错误: ${optionName} 必须为整数`)
+    process.exit(1)
+  }
+
+  const parsed = Number(normalized)
+  if (!Number.isSafeInteger(parsed)) {
+    console.error(`错误: ${optionName} 超出安全整数范围`)
+    process.exit(1)
+  }
+
+  return parsed
+}

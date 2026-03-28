@@ -30,6 +30,14 @@ node dist/cli.mjs --help
 node dist/cli.mjs config --show
 ```
 
+### 导出类型
+
+构建后包根会导出 CLI 相关类型，可直接在 TypeScript 中引用：
+
+```ts
+import type { PublishCommandOptions, PublishTTFlowCommandOptions } from 'beervid-app-cli'
+```
+
 ### 在 Claude Code / Codex / Antigravity 中使用（以下说明面向 AI Agent）
 
 #### 方式一：通过 `npx skills add` 安装（推荐）
@@ -52,6 +60,9 @@ npx skills add Lupeiwen0/beervid-app-cli
 ```text
 skills/beervid-app-cli/
   SKILL.md
+  skill.json
+  QUICKSTART.md
+  FAQ.md
   references/
   docs/
   example/
@@ -116,6 +127,14 @@ beervid publish-tts-flow --creator-id open_user_abc --file ./video.mp4 --interac
 # TTS：手动指定商品
 beervid publish-tts-flow --creator-id open_user_abc --file ./video.mp4 --product-id prod_123 --product-title "Widget"
 ```
+
+## TT / TTS 账号关联说明
+
+- TTS 账号可用于挂车发布和商品查询，但不能直接查询视频数据。
+- 如果同一达人既要走 TTS 挂车发布，又要查询该账号的视频数据，需要分别完成 TTS 和 TT 两种 OAuth 授权。
+- 官方当前没有提供 `uno_id` 这类可直接关联 TT/TTS 账号的稳定字段。
+- 当前推荐在授权后调用 `account/info`，以两边返回的 `username` 作为关联键，在你方系统里建立 TT 和 TTS 的软关联。
+- 真正调用 API 时仍然使用各自的业务主键：TTS 用 `creatorUserOpenId`，TT 用 `businessId`；`username` 只用于你方系统内的关联映射。
 
 详细用法见 [SKILL.md](./skills/beervid-app-cli/SKILL.md)。完整 API 参考见 [references/api-reference.md](./skills/beervid-app-cli/references/api-reference.md)。
 
