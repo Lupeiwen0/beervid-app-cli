@@ -1,7 +1,12 @@
 import type { CAC } from 'cac'
 import { openApiPost, printResult } from '../client/index.js'
 import type { QueryVideoData, NormalizedVideoItem } from '../types/index.js'
-import { getRawOptionValue, getRawOptionValues, rethrowIfProcessExit } from './utils.js'
+import {
+  getRawOptionValue,
+  getRawOptionValues,
+  parseStrictInteger,
+  rethrowIfProcessExit,
+} from './utils.js'
 
 export function register(cli: CAC): void {
   cli
@@ -10,11 +15,11 @@ export function register(cli: CAC): void {
     .option('--item-ids <ids>', '视频 ID，支持重复传参或逗号分隔（可选；不传则查询全部）')
     .option('--cursor <n>', '分页游标（可选）')
     .option('--max-count <n>', '每页数量（可选，10-20）')
-    .action(
-      async (options: { cursor?: string; maxCount?: string }) => {
+    .action(async () => {
         const businessId = getRawOptionValue(cli.rawArgs, '--business-id')
         const rawItemIdArgs = getRawOptionValues(cli.rawArgs, '--item-ids')
         const rawCursor = getRawOptionValue(cli.rawArgs, '--cursor')
+        const rawMaxCount = getRawOptionValue(cli.rawArgs, '--max-count')
 
         if (!businessId) {
           const missing = [!businessId && '--business-id'].filter(Boolean)
@@ -37,17 +42,17 @@ export function register(cli: CAC): void {
 
         let cursor: number | undefined
         if (rawCursor !== undefined) {
-          cursor = parseInt(rawCursor, 10)
-          if (Number.isNaN(cursor) || cursor < 0) {
+          cursor = parseStrictInteger(rawCursor, '--cursor')
+          if (cursor === undefined || cursor < 0) {
             console.error('错误: --cursor 必须为大于等于 0 的整数')
             process.exit(1)
           }
         }
 
         let maxCount: number | undefined
-        if (options.maxCount !== undefined) {
-          maxCount = parseInt(options.maxCount, 10)
-          if (Number.isNaN(maxCount) || maxCount < 10 || maxCount > 20) {
+        if (rawMaxCount !== undefined) {
+          maxCount = parseStrictInteger(rawMaxCount, '--max-count')
+          if (maxCount === undefined || maxCount < 10 || maxCount > 20) {
             console.error('错误: --max-count 必须为 10 到 20 之间的整数')
             process.exit(1)
           }
@@ -102,6 +107,5 @@ export function register(cli: CAC): void {
           console.error('查询视频数据失败:', (err as Error).message)
           process.exit(1)
         }
-      }
-    )
+      })
 }

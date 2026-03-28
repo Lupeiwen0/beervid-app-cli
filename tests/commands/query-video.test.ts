@@ -47,6 +47,19 @@ describe('query-video command', () => {
     expect(result.errors).toContain('错误: --max-count 必须为 10 到 20 之间的整数')
   })
 
+  it('fails when max-count is not an integer', async () => {
+    const result = await runCommand(register, [
+      'query-video',
+      '--business-id',
+      'biz-1',
+      '--max-count',
+      '10.5',
+    ])
+
+    expect(result.exitCode).toBe(1)
+    expect(result.errors).toContain('错误: --max-count 必须为整数')
+  })
+
   it('exits with 0 when no video data is returned', async () => {
     openApiPost.mockResolvedValueOnce({ videoList: [] })
 

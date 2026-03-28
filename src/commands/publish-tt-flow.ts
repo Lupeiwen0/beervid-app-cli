@@ -7,11 +7,11 @@ import {
   pollNormalVideoStatus,
   queryVideoWithRetry,
 } from '../workflows/index.js'
-import { getRawOptionValue, rethrowIfProcessExit } from './utils.js'
+import { getRawOptionValue, parseStrictInteger, rethrowIfProcessExit } from './utils.js'
 
 function parsePositiveInt(value: string | undefined, optionName: string, defaultValue: number): number {
-  const parsed = parseInt(value ?? `${defaultValue}`, 10)
-  if (Number.isNaN(parsed) || parsed <= 0) {
+  const parsed = parseStrictInteger(value ?? `${defaultValue}`, optionName)
+  if (parsed === undefined || parsed <= 0) {
     console.error(`错误: ${optionName} 必须为大于 0 的整数`)
     process.exit(1)
   }
@@ -19,9 +19,9 @@ function parsePositiveInt(value: string | undefined, optionName: string, default
 }
 
 function parseNonNegativeInt(value: string | undefined, optionName: string): number | undefined {
-  if (value === undefined) return undefined
-  const parsed = parseInt(value, 10)
-  if (Number.isNaN(parsed) || parsed < 0) {
+  const parsed = parseStrictInteger(value, optionName)
+  if (parsed === undefined) return undefined
+  if (parsed < 0) {
     console.error(`错误: ${optionName} 必须为大于等于 0 的整数`)
     process.exit(1)
   }

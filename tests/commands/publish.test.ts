@@ -115,6 +115,21 @@ describe('publish command', () => {
     })
   })
 
+  it('fails when thumbnail-offset is not an integer', async () => {
+    const result = await runCommand(register, [
+      'publish',
+      '--business-id',
+      'biz-2',
+      '--video-url',
+      'https://cdn/video-2.mp4',
+      '--thumbnail-offset',
+      '1.5',
+    ])
+
+    expect(result.exitCode).toBe(1)
+    expect(result.errors).toContain('错误: --thumbnail-offset 必须为整数')
+  })
+
   it('preserves large numeric ids from raw argv', async () => {
     openApiPost.mockResolvedValueOnce({ videoId: 'video-1' })
 

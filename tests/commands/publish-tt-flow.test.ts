@@ -46,6 +46,21 @@ describe('publish-tt-flow command', () => {
     expect(result.errors).toContain('错误: --interval 必须为大于 0 的整数')
   })
 
+  it('fails when thumbnail-offset is not an integer', async () => {
+    const result = await runCommand(register, [
+      'publish-tt-flow',
+      '--business-id',
+      'biz-1',
+      '--file',
+      '/tmp/video.mp4',
+      '--thumbnail-offset',
+      '2.5',
+    ])
+
+    expect(result.exitCode).toBe(1)
+    expect(result.errors).toContain('错误: --thumbnail-offset 必须为整数')
+  })
+
   it('completes the full tt workflow and exits with 0', async () => {
     uploadNormalVideo.mockResolvedValueOnce({ fileUrl: 'https://cdn/video.mp4' })
     publishNormalVideo.mockResolvedValueOnce({ shareId: 'share-1' })

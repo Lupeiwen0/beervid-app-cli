@@ -60,6 +60,9 @@ npx skills add Lupeiwen0/beervid-app-cli
 ```text
 skills/beervid-app-cli/
   SKILL.md
+  skill.json
+  QUICKSTART.md
+  FAQ.md
   references/
   docs/
   example/
