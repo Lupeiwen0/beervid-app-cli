@@ -36,8 +36,8 @@ export function register(cli: CAC): void {
           console.error('错误: --product-type 必须为 shop、showcase 或 all')
           process.exit(1)
         }
-        if (Number.isNaN(pageSize) || pageSize <= 0) {
-          console.error('错误: --page-size 必须为大于 0 的整数')
+        if (Number.isNaN(pageSize) || pageSize <= 0 || pageSize > 20) {
+          console.error('错误: --page-size 必须为 1 到 20 之间的整数')
           process.exit(1)
         }
 

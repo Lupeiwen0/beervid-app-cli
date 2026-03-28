@@ -41,6 +41,16 @@ https://your-app.com/callback?state={"ttAbId":"xxx","code":"yyy",...}
 > **重要**：`ttAbId` 就是后续所有 TT API 的 `businessId`，`ttsAbId` 就是所有 TTS API 的 `creatorUserOpenId`。
 > 这两个值必须可靠持久化，丢失意味着需要用户重新授权。
 
+## TT / TTS 账号关联建议
+
+如果同一达人既要做 TTS 挂车发布，又要查询视频数据，建议按下面方式建模：
+
+- TTS 授权和 TT 授权分别落成两条独立账号记录，不要混存成一条。
+- 回调阶段先持久化 `ttAbId` / `ttsAbId`，再异步调用 `account/info` 补全账号详情。
+- 官方当前没有提供 `uno_id` 这类可直接打通 TT/TTS 的稳定字段。
+- 当前推荐使用 `account/info` 返回的 `username` 作为关联键，在你方系统里建立 TT 和 TTS 的软关联。
+- 业务调用时不要把 `username` 当接口入参；挂车发布仍使用 `creatorUserOpenId`，视频查数仍使用 `businessId`。
+
 ### 解析 state 中的回调字段
 
 ```typescript
@@ -285,6 +295,7 @@ async function handleOAuthCallback(req: Request): Promise<Response> {
 - 回调请求应快速响应，避免用户长时间等待
 - 头像同步等操作允许延迟几秒完成
 - 即使同步失败，授权本身已成功
+- 如果要关联同一达人的 TT / TTS 账号，建议在这里同步并持久化 `username`
 
 ```typescript
 async function syncAccountInfoAsync(
@@ -298,6 +309,7 @@ async function syncAccountInfoAsync(
 
   await updateAccount(accountId, {
     username: data.username,
+    linkUsername: data.username?.trim().toLowerCase(),
     displayName: data.displayName,
     sellerName: data.sellerName,
     profileUrl: data.profileUrl,

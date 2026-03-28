@@ -55,7 +55,7 @@ interface ProductPageData {
   nextPageToken?: string | null
 }
 
-const MAX_PRODUCT_TITLE_LENGTH = 29
+const MAX_PRODUCT_TITLE_LENGTH = 30
 
 // ─── 辅助函数 ───────────────────────────────────────────────────────────────
 

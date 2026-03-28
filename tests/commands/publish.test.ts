@@ -77,10 +77,42 @@ describe('publish command', () => {
       fileId: 'file-1',
       title: '',
       productId: 'product-1',
-      productTitle: longTitle.slice(0, 29),
+      productTitle: longTitle.slice(0, 30),
     })
     expect(result.logs.some((line) => line.includes('已自动截断'))).toBe(true)
     expect(printResult).toHaveBeenCalledWith({ videoId: 'video-1' })
+  })
+
+  it('passes official optional TT publish fields through to the API', async () => {
+    openApiPost.mockResolvedValueOnce({ shareId: 'share-2' })
+
+    const result = await runCommand(register, [
+      'publish',
+      '--business-id',
+      'biz-2',
+      '--video-url',
+      'https://cdn/video-2.mp4',
+      '--brand-organic',
+      '--branded-content',
+      '--disable-comment',
+      '--disable-duet',
+      '--disable-stitch',
+      '--thumbnail-offset',
+      '12',
+    ])
+
+    expect(result.exitCode).toBeUndefined()
+    expect(openApiPost).toHaveBeenCalledWith('/api/v1/open/tiktok/video/publish', {
+      businessId: 'biz-2',
+      videoUrl: 'https://cdn/video-2.mp4',
+      caption: '',
+      isBrandOrganic: true,
+      isBrandedContent: true,
+      disableComment: true,
+      disableDuet: true,
+      disableStitch: true,
+      thumbnailOffset: 12,
+    })
   })
 
   it('preserves large numeric ids from raw argv', async () => {

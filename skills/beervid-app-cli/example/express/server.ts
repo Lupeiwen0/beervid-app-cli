@@ -225,6 +225,8 @@ app.get('/oauth/callback', async (req, res) => {
   openApiPost('/api/v1/open/account/info', { accountType, accountId })
     .then((info) => {
       const existing = accountStore.get(accountId) ?? {}
+      // 生产环境建议在这里把 username 持久化，并作为当前推荐的 TT/TTS 关联键。
+      // 官方没有提供 uno_id 这类可直接关联 TT/TTS 的稳定字段。
       accountStore.set(accountId, { ...existing, ...info })
       console.log(`[异步] 账号信息已同步: ${accountId}`)
     })
@@ -316,8 +318,8 @@ app.post('/api/publish/tts', async (req, res) => {
   }
 
   try {
-    // 商品标题最多 29 字符
-    const normalizedTitle = productTitle.slice(0, 29)
+    // 商品标题最多 30 字符
+    const normalizedTitle = productTitle.slice(0, 30)
 
     // 挂车发布（不重试——发布操作非幂等）
     const publishResult = await openApiPost<{ videoId: string }>(

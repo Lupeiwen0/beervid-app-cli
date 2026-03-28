@@ -191,7 +191,7 @@ export function register(cli: CAC): void {
           )
 
           if (publishResult.productTitle !== selectedProduct.title) {
-            console.warn('商品标题超过 29 字符，发布时已自动截断')
+            console.warn('商品标题超过 30 字符，发布时已自动截断')
           }
 
           printResult({

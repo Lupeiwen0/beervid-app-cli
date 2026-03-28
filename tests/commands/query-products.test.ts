@@ -34,6 +34,19 @@ describe('query-products command', () => {
     expect(result.errors).toContain('错误: --product-type 必须为 shop、showcase 或 all')
   })
 
+  it('fails when page size exceeds the OpenAPI maximum', async () => {
+    const result = await runCommand(register, [
+      'query-products',
+      '--creator-id',
+      'creator-1',
+      '--page-size',
+      '21',
+    ])
+
+    expect(result.exitCode).toBe(1)
+    expect(result.errors).toContain('错误: --page-size 必须为 1 到 20 之间的整数')
+  })
+
   it('fails when cursor is invalid', async () => {
     const result = await runCommand(register, [
       'query-products',

@@ -34,6 +34,19 @@ describe('query-video command', () => {
     expect(result.errors).toContain('错误: --item-ids 不能为空')
   })
 
+  it('fails when max-count is outside the documented range', async () => {
+    const result = await runCommand(register, [
+      'query-video',
+      '--business-id',
+      'biz-1',
+      '--max-count',
+      '9',
+    ])
+
+    expect(result.exitCode).toBe(1)
+    expect(result.errors).toContain('错误: --max-count 必须为 10 到 20 之间的整数')
+  })
+
   it('exits with 0 when no video data is returned', async () => {
     openApiPost.mockResolvedValueOnce({ videoList: [] })
 
@@ -47,6 +60,27 @@ describe('query-video command', () => {
 
     expect(result.exitCode).toBe(0)
     expect(result.logs).toContain('未查到视频数据')
+  })
+
+  it('allows querying all videos without item ids', async () => {
+    openApiPost.mockResolvedValueOnce({ videoList: [] })
+
+    const result = await runCommand(register, [
+      'query-video',
+      '--business-id',
+      'biz-1',
+      '--cursor',
+      '0',
+      '--max-count',
+      '20',
+    ])
+
+    expect(result.exitCode).toBe(0)
+    expect(openApiPost).toHaveBeenCalledWith('/api/v1/open/tiktok/video/query', {
+      businessId: 'biz-1',
+      cursor: 0,
+      maxCount: 20,
+    })
   })
 
   it('prints api-shaped query result', async () => {

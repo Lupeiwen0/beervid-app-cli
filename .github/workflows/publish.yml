@@ -22,7 +22,12 @@ jobs:
       - run: npm ci
 
       - name: Set version from tag
-        run: npm version "$GITHUB_REF_NAME" --no-git-tag-version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          npm version "$VERSION" --no-git-tag-version
+
+      - name: Sync skill version from package.json
+        run: npm run sync:skill-version
 
       - run: npm run build
 

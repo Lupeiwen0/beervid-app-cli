@@ -34,6 +34,8 @@ export async function GET(request: NextRequest) {
   const accountType = ttAbId ? 'TT' : 'TTS'
 
   // 异步拉取账号详情（不阻塞回调响应）
+  // 生产环境建议在这里把 username 写入数据库，并作为当前推荐的 TT/TTS 关联键。
+  // 官方没有提供 uno_id 这类可直接关联 TT/TTS 的稳定字段。
   openApiPost('/api/v1/open/account/info', { accountType, accountId }).catch((err) => {
     console.error('[异步] 账号信息同步失败:', (err as Error).message)
   })

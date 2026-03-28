@@ -1,10 +1,27 @@
 import type { CAC } from 'cac'
 import { openApiPost, printResult } from '../client/index.js'
-import type { NormalPublishResult, ShoppablePublishResult } from '../types/index.js'
+import type {
+  NormalPublishOptions,
+  NormalPublishResult,
+  ShoppablePublishResult,
+} from '../types/index.js'
 import { getRawOptionValue, rethrowIfProcessExit } from './utils.js'
 
-const MAX_PRODUCT_TITLE_LENGTH = 29
+const MAX_PRODUCT_TITLE_LENGTH = 30
 const VALID_PUBLISH_TYPES = ['normal', 'shoppable']
+
+function parseNonNegativeInt(
+  value: string | undefined,
+  optionName: string
+): number | undefined {
+  if (value === undefined) return undefined
+  const parsed = parseInt(value, 10)
+  if (Number.isNaN(parsed) || parsed < 0) {
+    console.error(`错误: ${optionName} 必须为大于等于 0 的整数`)
+    process.exit(1)
+  }
+  return parsed
+}
 
 export function register(cli: CAC): void {
   cli
@@ -15,10 +32,16 @@ export function register(cli: CAC): void {
     .option('--creator-id <id>', 'TTS 账号 creatorUserOpenId（挂车发布必填）')
     .option('--file-id <id>', '上传返回的 videoFileId（挂车发布必填）')
     .option('--product-id <id>', '商品 ID（挂车发布必填）')
-    .option('--product-title <title>', '商品标题，最多 29 字符（挂车发布必填）', {
+    .option('--product-title <title>', '商品标题，最多 30 字符（挂车发布必填）', {
       type: [String],
     })
     .option('--caption <text>', '视频描述/文案（可选）')
+    .option('--brand-organic', '标记为品牌有机内容（TT 普通发布可选）')
+    .option('--branded-content', '标记为品牌内容（TT 普通发布可选）')
+    .option('--disable-comment', '禁用评论（TT 普通发布可选）')
+    .option('--disable-duet', '禁用合拍（TT 普通发布可选）')
+    .option('--disable-stitch', '禁用拼接（TT 普通发布可选）')
+    .option('--thumbnail-offset <n>', '缩略图偏移（TT 普通发布可选，>= 0）')
     .action(
       async (options: {
         type?: string
@@ -29,6 +52,12 @@ export function register(cli: CAC): void {
         productId?: string
         productTitle?: string
         caption?: string
+        brandOrganic?: boolean
+        brandedContent?: boolean
+        disableComment?: boolean
+        disableDuet?: boolean
+        disableStitch?: boolean
+        thumbnailOffset?: string
       }) => {
         const publishType = (options.type ?? 'normal').toLowerCase()
         const businessId = getRawOptionValue(cli.rawArgs, '--business-id')
@@ -95,13 +124,47 @@ export function register(cli: CAC): void {
               process.exit(1)
             }
 
+            const publishOptions: NormalPublishOptions = {
+              caption: options.caption,
+            }
+            if (options.brandOrganic) publishOptions.isBrandOrganic = true
+            if (options.brandedContent) publishOptions.isBrandedContent = true
+            if (options.disableComment) publishOptions.disableComment = true
+            if (options.disableDuet) publishOptions.disableDuet = true
+            if (options.disableStitch) publishOptions.disableStitch = true
+            const thumbnailOffset = parseNonNegativeInt(
+              options.thumbnailOffset,
+              '--thumbnail-offset'
+            )
+            if (thumbnailOffset !== undefined) {
+              publishOptions.thumbnailOffset = thumbnailOffset
+            }
+
             console.log('普通视频发布中...')
             data = await openApiPost<NormalPublishResult>(
               '/api/v1/open/tiktok/video/publish',
               {
                 businessId: businessId!,
                 videoUrl: options.videoUrl!,
-                caption: options.caption ?? '',
+                caption: publishOptions.caption ?? '',
+                ...(publishOptions.isBrandOrganic !== undefined
+                  ? { isBrandOrganic: publishOptions.isBrandOrganic }
+                  : {}),
+                ...(publishOptions.isBrandedContent !== undefined
+                  ? { isBrandedContent: publishOptions.isBrandedContent }
+                  : {}),
+                ...(publishOptions.disableComment !== undefined
+                  ? { disableComment: publishOptions.disableComment }
+                  : {}),
+                ...(publishOptions.disableDuet !== undefined
+                  ? { disableDuet: publishOptions.disableDuet }
+                  : {}),
+                ...(publishOptions.disableStitch !== undefined
+                  ? { disableStitch: publishOptions.disableStitch }
+                  : {}),
+                ...(publishOptions.thumbnailOffset !== undefined
+                  ? { thumbnailOffset: publishOptions.thumbnailOffset }
+                  : {}),
               }
             )
 

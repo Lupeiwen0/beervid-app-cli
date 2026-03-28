@@ -7,20 +7,20 @@ export function register(cli: CAC): void {
   cli
     .command('query-video', '查询视频统计数据')
     .option('--business-id <id>', 'TT 账号 businessId（必填）')
-    .option('--item-ids <ids>', '视频 ID，支持重复传参或逗号分隔（必填）')
+    .option('--item-ids <ids>', '视频 ID，支持重复传参或逗号分隔（可选；不传则查询全部）')
+    .option('--cursor <n>', '分页游标（可选）')
+    .option('--max-count <n>', '每页数量（可选，10-20）')
     .action(
-      async () => {
+      async (options: { cursor?: string; maxCount?: string }) => {
         const businessId = getRawOptionValue(cli.rawArgs, '--business-id')
         const rawItemIdArgs = getRawOptionValues(cli.rawArgs, '--item-ids')
+        const rawCursor = getRawOptionValue(cli.rawArgs, '--cursor')
 
-        if (!businessId || rawItemIdArgs.length === 0) {
-          const missing = [
-            !businessId && '--business-id',
-            rawItemIdArgs.length === 0 && '--item-ids',
-          ].filter(Boolean)
+        if (!businessId) {
+          const missing = [!businessId && '--business-id'].filter(Boolean)
           console.error(`缺少必填参数: ${missing.join(', ')}\n`)
           console.error(
-            '用法: beervid query-video --business-id <id> --item-ids <id1,id2,...>'
+            '用法: beervid query-video --business-id <id> [--item-ids <id1,id2,...>] [--cursor <n>] [--max-count <n>]'
           )
           process.exit(1)
         }
@@ -30,17 +30,43 @@ export function register(cli: CAC): void {
           .map((id) => id.trim())
           .filter(Boolean)
 
-        if (itemIds.length === 0) {
+        if (rawItemIdArgs.length > 0 && itemIds.length === 0) {
           console.error('错误: --item-ids 不能为空')
           process.exit(1)
         }
 
+        let cursor: number | undefined
+        if (rawCursor !== undefined) {
+          cursor = parseInt(rawCursor, 10)
+          if (Number.isNaN(cursor) || cursor < 0) {
+            console.error('错误: --cursor 必须为大于等于 0 的整数')
+            process.exit(1)
+          }
+        }
+
+        let maxCount: number | undefined
+        if (options.maxCount !== undefined) {
+          maxCount = parseInt(options.maxCount, 10)
+          if (Number.isNaN(maxCount) || maxCount < 10 || maxCount > 20) {
+            console.error('错误: --max-count 必须为 10 到 20 之间的整数')
+            process.exit(1)
+          }
+        }
+
         try {
-          console.log(`查询 ${itemIds.length} 个视频的数据...\n`)
-          const data = await openApiPost<QueryVideoData>('/api/v1/open/tiktok/video/query', {
+          console.log(
+            itemIds.length > 0
+              ? `查询 ${itemIds.length} 个视频的数据...\n`
+              : '查询视频数据列表...\n'
+          )
+          const requestBody: Record<string, unknown> = {
             businessId,
-            itemIds,
-          })
+          }
+          if (itemIds.length > 0) requestBody.itemIds = itemIds
+          if (cursor !== undefined) requestBody.cursor = cursor
+          if (maxCount !== undefined) requestBody.maxCount = maxCount
+
+          const data = await openApiPost<QueryVideoData>('/api/v1/open/tiktok/video/query', requestBody)
 
           const list = data.videoList ?? data.videos ?? []
 

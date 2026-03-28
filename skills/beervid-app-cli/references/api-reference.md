@@ -115,6 +115,12 @@ const url = data.crossBorderUrl
 | `accessToken` | `string` | 访问令牌 |
 | `ext` | `Record<string, unknown>` | 扩展字段 |
 
+**账号关联说明：**
+
+- `account/info` 当前会返回 `username`，但没有官方 `uno_id` 一类的 TT/TTS 关联字段。
+- 如果同一达人既要做 TTS 挂车发布，又要查询视频数据，需要分别完成 TTS 和 TT 授权。
+- 当前推荐在你方系统内以 `username` 建立 TT/TTS 的软关联。
+
 **调用示例：**
 ```typescript
 const { data: accountInfo } = await openApiPost<AccountInfo>(
@@ -238,7 +244,13 @@ const { data: accountInfo } = await openApiPost<AccountInfo>(
 {
   "businessId": "biz_12345",
   "videoUrl": "https://cdn.beervid.ai/uploads/xxx.mp4",
-  "caption": "Check out this amazing video! #viral"
+  "caption": "Check out this amazing video! #viral",
+  "isBrandOrganic": false,
+  "isBrandedContent": false,
+  "disableComment": false,
+  "disableDuet": false,
+  "disableStitch": false,
+  "thumbnailOffset": 0
 }
 ```
 
@@ -247,6 +259,12 @@ const { data: accountInfo } = await openApiPost<AccountInfo>(
 | `businessId` | `string` | 是 | TT 账号的 businessId |
 | `videoUrl` | `string` | 是 | 上传后获得的视频 URL |
 | `caption` | `string` | 否 | 视频描述/文案 |
+| `isBrandOrganic` | `boolean` | 否 | 是否为品牌有机内容 |
+| `isBrandedContent` | `boolean` | 否 | 是否为品牌内容 |
+| `disableComment` | `boolean` | 否 | 是否禁用评论 |
+| `disableDuet` | `boolean` | 否 | 是否禁用合拍 |
+| `disableStitch` | `boolean` | 否 | 是否禁用拼接 |
+| `thumbnailOffset` | `number` | 否 | 缩略图偏移 |
 
 **响应：**
 ```json
@@ -255,8 +273,8 @@ const { data: accountInfo } = await openApiPost<AccountInfo>(
   "success": true,
   "data": {
     "shareId": "share_abc123",
-    "status": "PROCESSING_DOWNLOAD",
-    "message": ""
+    "status": "PUBLISHED",
+    "message": "视频发布成功"
   }
 }
 ```
@@ -286,7 +304,7 @@ const { data: accountInfo } = await openApiPost<AccountInfo>(
 | `fileId` | `string` | 是 | 上传返回的 `videoFileId` |
 | `title` | `string` | 否 | 视频标题 |
 | `productId` | `string` | 是 | 商品 ID |
-| `productTitle` | `string` | 是 | 商品标题（**最多 29 字符**，超出应截断） |
+| `productTitle` | `string` | 是 | 商品标题（**最多 30 字符**，超出应截断） |
 
 **响应：**
 ```json
@@ -295,13 +313,13 @@ const { data: accountInfo } = await openApiPost<AccountInfo>(
   "success": true,
   "data": {
     "videoId": "vid_xyz789",
-    "status": "PUBLISH_COMPLETE",
-    "message": ""
+    "status": "PUBLISHED",
+    "message": "挂车视频发布成功"
   }
 }
 ```
 
-**注意：** 挂车视频发布后立即完成（`PUBLISH_COMPLETE`），无需轮询状态。
+**注意：** 挂车视频发布接口会直接返回 `videoId` 和发布结果，无需轮询状态。
 
 ---
 
@@ -383,14 +401,18 @@ const { data: accountInfo } = await openApiPost<AccountInfo>(
 ```json
 {
   "businessId": "biz_12345",
-  "itemIds": ["7123456789012345678", "7123456789012345679"]
+  "itemIds": ["7123456789012345678", "7123456789012345679"],
+  "cursor": 0,
+  "maxCount": 20
 }
 ```
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `businessId` | `string` | 是 | TT 账号的 businessId |
-| `itemIds` | `string[]` | 是 | 视频 ID 数组 |
+| `itemIds` | `string[]` | 否 | 视频 ID 数组；不传则查询全部 |
+| `cursor` | `number` | 否 | 分页游标，首次通常传 `0` 或不传 |
+| `maxCount` | `number` | 否 | 每页数量，OpenAPI 说明为最大 `20` |
 
 **响应（新版格式 — camelCase）：**
 ```json
@@ -459,7 +481,11 @@ if (video) {
 }
 ```
 
-**约束：** 仅拥有 TT 授权的账号才可查询视频数据。TTS-only 账号无此能力。
+**约束：**
+
+- 仅拥有 TT 授权的账号才可查询视频数据；TTS-only 账号无此能力。
+- 如果同一达人先做了 TTS 授权，但还想查询视频数据，需要额外完成 TT 授权。
+- 官方当前没有提供 `uno_id` 这类 TT/TTS 强关联字段，推荐在你方系统内基于 `username` 建立关联后，再取对应 TT 账号的 `businessId` 查询数据。
 
 ---
 
@@ -521,7 +547,7 @@ if (video) {
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | `id` | `string` | 商品 ID，发布时传入 `productId` |
-| `title` | `string` | 商品标题，发布时传入 `productTitle`（注意 29 字符限制） |
+| `title` | `string` | 商品标题，发布时传入 `productTitle`（注意 30 字符限制） |
 | `price` | `object` | 价格信息 |
 | `images` | `string[]` | 商品图片（特殊格式，需解析） |
 | `addedStatus` | `string` | 添加状态 |

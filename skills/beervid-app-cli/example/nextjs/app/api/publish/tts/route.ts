@@ -8,7 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { openApiPost } from '@/lib/beervid-client'
 
-const MAX_PRODUCT_TITLE_LENGTH = 29
+const MAX_PRODUCT_TITLE_LENGTH = 30
 
 export async function POST(request: NextRequest) {
   const body = await request.json()
@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // 商品标题最多 29 字符，超出自动截断
+    // 商品标题最多 30 字符，超出自动截断
     const normalizedTitle = productTitle.slice(0, MAX_PRODUCT_TITLE_LENGTH)
     const wasTruncated = normalizedTitle !== productTitle
 
