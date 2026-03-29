@@ -2,6 +2,7 @@ import type { CAC } from 'cac'
 import { printResult } from '../client/index.js'
 import {
   fetchProductPool,
+  flattenProductGroups,
   sortProductsForSelection,
   promptForProductSelection,
   uploadTtsVideo,
@@ -10,6 +11,7 @@ import {
 import type {
   ProductType,
   NormalizedProductItem,
+  FlatProductItem,
 } from '../types/index.js'
 import { getRawOptionValue, rethrowIfProcessExit } from './utils.js'
 
@@ -117,7 +119,7 @@ export function register(cli: CAC): void {
           console.log('开始执行 TTS 完整发布流程...')
 
           let selectedProduct: NormalizedProductItem
-          let queriedProducts: unknown = null
+          let queriedProducts: FlatProductItem[] | null = null
 
           // If both --product-id and --product-title are provided, skip product scan entirely
           if (productId && options.productTitle) {
@@ -131,7 +133,7 @@ export function register(cli: CAC): void {
               pageSize,
               maxProductPages
             )
-            queriedProducts = productPool.rawGroups
+            queriedProducts = flattenProductGroups(productPool.rawGroups)
 
             if (productPool.summary.reachedPageLimit && productPool.summary.nextCursor) {
               console.warn(`商品扫描已达到页数上限 ${maxProductPages}，仍存在未拉取分页`)

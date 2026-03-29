@@ -12,6 +12,7 @@ import type {
   ProductPageData,
   ProductType,
   NormalizedProductItem,
+  FlatProductItem,
   WorkflowWarning,
   TTFlowStatusResult,
 } from '../types/index.js'
@@ -206,6 +207,21 @@ export function encodeCursor(cursor: ProductCursor): string | null {
   return Buffer.from(JSON.stringify(cursor)).toString('base64')
 }
 
+export function flattenProductGroups(rawGroups: ProductPageData[]): FlatProductItem[] {
+  const seen = new Set<string>()
+  const list: FlatProductItem[] = []
+  for (const group of rawGroups) {
+    const groupType = (group as Record<string, unknown>).productType as string | undefined
+    for (const product of group.products ?? []) {
+      if (!seen.has(product.id)) {
+        seen.add(product.id)
+        list.push({ ...product, productType: groupType ?? product.source ?? '' })
+      }
+    }
+  }
+  return list
+}
+
 export async function queryProductsPage(
   creatorId: string,
   productType: ProductType,
@@ -227,8 +243,8 @@ export async function queryProductsPage(
   })
   const allProducts = new Map<string, NormalizedProductItem>()
   const rawGroups: ProductPageData[] = []
-  let nextShopToken: string | null = cursor.shopToken
-  let nextShowcaseToken: string | null = cursor.showcaseToken
+  let nextShopToken: string | null = productType === 'showcase' ? null : cursor.shopToken
+  let nextShowcaseToken: string | null = productType === 'shop' ? null : cursor.showcaseToken
   let successCount = 0
   const failedSources: string[] = []
 

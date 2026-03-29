@@ -1,6 +1,6 @@
 import type { CAC } from 'cac'
 import { printResult } from '../client/index.js'
-import { decodeCursor, queryProductsPage } from '../workflows/index.js'
+import { decodeCursor, flattenProductGroups, queryProductsPage } from '../workflows/index.js'
 import type { ProductType, ProductCursor } from '../types/index.js'
 import { getRawOptionValue, parseStrictInteger, rethrowIfProcessExit } from './utils.js'
 
@@ -77,12 +77,17 @@ export function register(cli: CAC): void {
 
           if (pageResult.nextCursor) {
             console.log(`下一页游标: ${pageResult.nextCursor}`)
-            console.log(`使用: beervid query-products --creator-id ${creatorId} --cursor ${pageResult.nextCursor}`)
+            console.log(
+              `使用: beervid query-products --creator-id ${creatorId} --product-type ${productType} --cursor ${pageResult.nextCursor}`
+            )
           } else {
             console.log('已到最后一页')
           }
 
-          printResult(pageResult.rawGroups)
+          printResult({
+            list: flattenProductGroups(pageResult.rawGroups),
+            nextPage: pageResult.nextCursor,
+          })
         } catch (err) {
           rethrowIfProcessExit(err)
           console.error('查询商品失败:', (err as Error).message)

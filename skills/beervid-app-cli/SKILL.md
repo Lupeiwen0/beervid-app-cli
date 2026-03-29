@@ -212,84 +212,31 @@ creatorUserOpenId -> upload-tts-video -> fileId -> shoppable-publish -> videoId
 
 ## CLI 工具
 
-本 Skill 配套提供 `beervid` CLI；可直接在终端调用所有 Open API 能力。如需使用 CLI，请先安装：
+本 Skill 配套提供 `beervid` CLI（`npm install -g beervid-app-cli`），可直接在终端调用所有 Open API 能力。
 
-```bash
-npm install -g beervid-app-cli
-```
+命令参数、使用示例、输出结构等详细说明见 [`references/cli-reference.md`](./references/cli-reference.md)。
 
-### CLI 前置
+### 命令一览
 
-```bash
-beervid config --app-key "your-api-key"
-export BEERVID_APP_BASE_URL="https://open.beervid.ai"
-```
+| 命令               | 功能                            |
+| ------------------ | ------------------------------- |
+| `config`           | 设置或查看全局配置              |
+| `get-oauth-url`    | 获取 TT/TTS OAuth 授权链接     |
+| `get-account-info` | 查询账号信息                    |
+| `upload`           | 上传视频（普通/TTS）            |
+| `publish`          | 发布视频（普通/挂车）           |
+| `poll-status`      | 轮询 TT 发布状态                |
+| `query-video`      | 查询视频数据                    |
+| `query-products`   | 查询 TTS 商品                   |
+| `publish-tt-flow`  | TT 完整发布流程（上传→发布→轮询）|
+| `publish-tts-flow` | TTS 完整发布流程（商品→上传→发布）|
 
-### CLI 命令一览
+### 关键输出差异
 
-| 命令                       | 功能                  | 常用参数                                                                     |
-| -------------------------- | --------------------- | ---------------------------------------------------------------------------- | ------------------------- |
-| `beervid config`           | 设置或查看全局配置    | `--app-key`, `--base-url`, `--show`                                          |
-| `beervid get-oauth-url`    | 获取 OAuth 授权链接   | `--type tt                                                                   | tts`                      |
-| `beervid get-account-info` | 查询账号信息          | `--type TT                                                                   | TTS`, `--account-id`      |
-| `beervid upload`           | 上传视频              | `--file`, `--type tts`, `--creator-id`, `--token`                            |
-| `beervid publish`          | 发布普通或挂车视频    | `--type normal                                                               | shoppable` 加对应业务参数 |
-| `beervid poll-status`      | 轮询 TT 发布状态      | `--business-id`, `--share-id`, `--interval`, `--max-polls`                   |
-| `beervid query-video`      | 查询视频数据          | `--business-id`, `--item-ids`, `--cursor`, `--max-count`                     |
-| `beervid query-products`   | 查询 TTS 商品         | `--creator-id`, `--product-type`, `--cursor`                                 |
-| `beervid publish-tt-flow`  | 执行 TT 完整发布流程  | `--business-id`, `--file`, `--caption`                                       |
-| `beervid publish-tts-flow` | 执行 TTS 完整发布流程 | `--creator-id`, `--file`, `--interactive`, `--product-id`, `--product-title` |
+大多数命令直接输出 API `data` 字段。以下有特殊处理（详见 [CLI 参考](./references/cli-reference.md#输出结构)）：
 
-### 使用示例
-
-最常用的最小示例如下：
-
-```bash
-# 设置 APP Key
-beervid config --app-key "your-api-key"
-
-# 获取授权链接
-beervid get-oauth-url --type tt
-beervid get-oauth-url --type tts
-
-# 查询账号信息
-beervid get-account-info --type TT --account-id 7281234567890
-
-# 上传普通视频（--file 同时支持本地文件路径和 URL 地址）
-beervid upload --file ./video.mp4
-beervid upload --file https://example.com/video.mp4
-
-# 上传 TTS 视频（--file 同时支持本地文件路径和 URL 地址）
-beervid upload --file ./video.mp4 --type tts --creator-id=open_user_abc
-
-# 普通发布（--video-url 需要传可访问的视频 URL）
-beervid publish --type normal --business-id=biz_12345 --video-url https://cdn.beervid.ai/uploads/xxx.mp4 --caption "My video"
-
-# 挂车发布
-beervid publish --type shoppable --creator-id=open_user_abc --file-id vf_abc123 --product-id prod_789 --product-title "Premium Widget" --caption "Product review"
-
-# 轮询状态
-beervid poll-status --business-id=biz_12345 --share-id share_abc123
-
-# 查询视频数据
-beervid query-video --business-id=biz_12345 --item-ids 7123456789012345678
-beervid query-video --business-id=biz_12345 --cursor 0 --max-count 20
-
-# 查询商品
-beervid query-products --creator-id=open_user_abc
-
-# TT 一键完整流程（--file 同时支持本地文件路径和 URL 地址）
-beervid publish-tt-flow --business-id=biz_12345 --file ./video.mp4 --caption "My video"
-beervid publish-tt-flow --business-id=biz_12345 --file https://example.com/video.mp4 --caption "My video"
-
-# TTS 一键完整流程（--file 同时支持本地文件路径和 URL 地址）
-beervid publish-tts-flow --creator-id=open_user_abc --file ./video.mp4
-beervid publish-tts-flow --creator-id=open_user_abc --file https://example.com/video.mp4
-```
-
-### CLI 特别注意
-
-当参数值本身以 `-` 开头时，必须写成 `--option=value`，否则 CLI 会把值误判为新的选项。
+- `query-products`：合并 shop + showcase 去重后的扁平列表，附带复合分页游标
+- `publish-tts-flow`：多步骤组合结果，包含商品列表、选中商品、上传和发布数据
 
 ## 读哪份文档
 
@@ -309,6 +256,10 @@ beervid publish-tts-flow --creator-id=open_user_abc --file https://example.com/v
 - 响应字段
 - 错误码
 - 新旧字段兼容方式
+
+### CLI 使用细节
+
+命令参数、使用示例、输出结构、注意事项：[`references/cli-reference.md`](./references/cli-reference.md)
 
 ### 接入设计
 

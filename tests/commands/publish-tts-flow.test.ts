@@ -21,13 +21,17 @@ vi.mock('../../src/client/index.js', () => ({
   printResult,
 }))
 
-vi.mock('../../src/workflows/index.js', () => ({
-  fetchProductPool,
-  sortProductsForSelection,
-  promptForProductSelection,
-  uploadTtsVideo,
-  publishTtsVideo,
-}))
+vi.mock('../../src/workflows/index.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../src/workflows/index.js')>()
+  return {
+    ...actual,
+    fetchProductPool,
+    sortProductsForSelection,
+    promptForProductSelection,
+    uploadTtsVideo,
+    publishTtsVideo,
+  }
+})
 
 import { register } from '../../src/commands/publish-tts-flow.js'
 
@@ -161,9 +165,8 @@ describe('publish-tts-flow command', () => {
     expect(printResult).toHaveBeenCalledWith({
       products: [
         {
+          ...selectedProduct,
           productType: 'shop',
-          nextPageToken: null,
-          products: [selectedProduct],
         },
       ],
       selectedProduct,
@@ -227,9 +230,8 @@ describe('publish-tts-flow command', () => {
     expect(printResult).toHaveBeenCalledWith({
       products: [
         {
+          ...product,
           productType: 'showcase',
-          nextPageToken: null,
-          products: [product],
         },
       ],
       selectedProduct: product,

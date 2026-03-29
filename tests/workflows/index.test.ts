@@ -8,7 +8,12 @@ vi.mock('../../src/client/index.js', () => ({
   openApiPost,
 }))
 
-import { fetchProductPool, isProductPublishable, sortProductsForSelection } from '../../src/workflows/index.js'
+import {
+  fetchProductPool,
+  isProductPublishable,
+  queryProductsPage,
+  sortProductsForSelection,
+} from '../../src/workflows/index.js'
 import type { NormalizedProductItem } from '../../src/types/index.js'
 
 describe('workflow product pagination', () => {
@@ -113,6 +118,33 @@ describe('workflow product pagination', () => {
       reachedPageLimit: false,
       failedSources: [],
     })
+  })
+
+  it('returns null nextCursor when a single queried source is exhausted', async () => {
+    openApiPost.mockResolvedValueOnce({
+      nextPageToken: null,
+      products: [
+        {
+          id: 'shop-1',
+          title: 'Shop page 1',
+          salesCount: 10,
+        },
+      ],
+    })
+
+    const result = await queryProductsPage('creator-1', 'shop', 20, {
+      shopToken: '',
+      showcaseToken: '',
+    })
+
+    expect(openApiPost).toHaveBeenCalledTimes(1)
+    expect(openApiPost).toHaveBeenCalledWith('/api/v1/open/tts/products/query', {
+      creatorUserOpenId: 'creator-1',
+      productType: 'shop',
+      pageSize: 20,
+      pageToken: '',
+    })
+    expect(result.nextCursor).toBeNull()
   })
 })
 
