@@ -157,6 +157,8 @@ export interface ProductPageData {
   [key: string]: unknown
 }
 
+export type FlatProductItem = RawProductItem & { productType: string }
+
 export interface ProductCursor {
   shopToken: string | null
   showcaseToken: string | null

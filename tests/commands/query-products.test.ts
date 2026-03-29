@@ -73,7 +73,7 @@ describe('query-products command', () => {
     expect(result.errors).toContain('查询商品失败: 所有商品源都请求失败')
   })
 
-  it('prints api-shaped product groups', async () => {
+  it('outputs deduplicated flat list with productType and nextPage', async () => {
     openApiPost
       .mockResolvedValueOnce({
         productType: 'shop',
@@ -122,44 +122,30 @@ describe('query-products command', () => {
 
     expect(result.exitCode).toBeUndefined()
     expect(openApiPost).toHaveBeenCalledTimes(2)
-    expect(printResult).toHaveBeenCalledWith([
-      {
-        productType: 'shop',
-        nextPageToken: 'shop-next',
-        products: [
-          {
-            id: 'p-1',
-            title: 'Shop product',
-            images: ['{url=https://img.example.com/shop.jpg}'],
-            salesCount: 10,
-            brandName: 'Brand A',
-            shopName: 'Shop A',
-          },
-        ],
-      },
-      {
-        productType: 'showcase',
-        nextPageToken: '',
-        products: [
-          {
-            id: 'p-1',
-            title: 'Duplicate product',
-            images: ['https://img.example.com/duplicate.jpg'],
-            salesCount: 99,
-            brandName: 'Brand B',
-            shopName: 'Shop B',
-          },
-          {
-            id: 'p-2',
-            title: 'Showcase product',
-            images: ['https://img.example.com/showcase.jpg'],
-            salesCount: 20,
-            brandName: 'Brand C',
-            shopName: 'Shop C',
-          },
-        ],
-      },
-    ])
+
+    const call = printResult.mock.calls[0][0]
+    // p-1 appears in both shop and showcase but should only appear once (from shop, first seen)
+    expect(call.list).toHaveLength(2)
+    expect(call.list[0]).toEqual({
+      id: 'p-1',
+      title: 'Shop product',
+      images: ['{url=https://img.example.com/shop.jpg}'],
+      salesCount: 10,
+      brandName: 'Brand A',
+      shopName: 'Shop A',
+      productType: 'shop',
+    })
+    expect(call.list[1]).toEqual({
+      id: 'p-2',
+      title: 'Showcase product',
+      images: ['https://img.example.com/showcase.jpg'],
+      salesCount: 20,
+      brandName: 'Brand C',
+      shopName: 'Shop C',
+      productType: 'showcase',
+    })
+    // shop has nextPageToken 'shop-next', showcase has '' → composite cursor exists
+    expect(call.nextPage).toEqual(expect.any(String))
   })
 
   it('preserves null tokens in cursor and skips exhausted sources', async () => {
@@ -198,22 +184,68 @@ describe('query-products command', () => {
       pageSize: 20,
       pageToken: 'showcase-next',
     })
-    expect(printResult).toHaveBeenCalledWith([
-      {
-        productType: 'showcase',
-        nextPageToken: null,
-        products: [
-          {
-            id: 'p-3',
-            title: 'Showcase next page',
-            images: ['https://img.example.com/showcase-next.jpg'],
-            salesCount: 30,
-            brandName: 'Brand D',
-            shopName: 'Shop D',
-          },
-        ],
-      },
+    expect(printResult).toHaveBeenCalledWith({
+      list: [
+        {
+          id: 'p-3',
+          title: 'Showcase next page',
+          images: ['https://img.example.com/showcase-next.jpg'],
+          salesCount: 30,
+          brandName: 'Brand D',
+          shopName: 'Shop D',
+          productType: 'showcase',
+        },
+      ],
+      nextPage: null,
+    })
+  })
+
+  it('prints single-type next cursor usage with product type preserved', async () => {
+    openApiPost.mockResolvedValueOnce({
+      productType: 'shop',
+      nextPageToken: 'shop-next',
+      products: [
+        {
+          id: 'p-4',
+          title: 'Shop next page',
+          images: ['https://img.example.com/shop-next.jpg'],
+          salesCount: 40,
+          brandName: 'Brand E',
+          shopName: 'Shop E',
+        },
+      ],
+    })
+
+    const result = await runCommand(register, [
+      'query-products',
+      '--creator-id',
+      'creator-1',
+      '--product-type',
+      'shop',
     ])
+
+    expect(result.exitCode).toBeUndefined()
+    expect(
+      result.logs.some((line) =>
+        line.includes(
+          '使用: beervid query-products --creator-id creator-1 --product-type shop --cursor '
+        )
+      )
+    ).toBe(true)
+    expect(printResult).toHaveBeenCalledWith({
+      list: [
+        {
+          id: 'p-4',
+          title: 'Shop next page',
+          images: ['https://img.example.com/shop-next.jpg'],
+          salesCount: 40,
+          brandName: 'Brand E',
+          shopName: 'Shop E',
+          productType: 'shop',
+        },
+      ],
+      nextPage: expect.any(String),
+    })
   })
 
   it('preserves large numeric creator ids from raw argv', async () => {

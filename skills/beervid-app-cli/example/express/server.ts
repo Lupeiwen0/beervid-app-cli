@@ -409,7 +409,33 @@ app.get('/api/products/:creatorId', async (req, res) => {
       pageToken,
     })
 
-    res.json({ success: true, data })
+    // 解析图片 URL + 按 id 去重
+    const groups = Array.isArray(data) ? data : [data]
+    const seen = new Set<string>()
+    const list: Record<string, unknown>[] = []
+    let nextPageToken: string | null = null
+
+    for (const group of groups as Array<{ products?: Array<Record<string, unknown>>; nextPageToken?: string | null }>) {
+      for (const product of group.products ?? []) {
+        const id = product['id'] as string
+        if (seen.has(id)) continue
+        seen.add(id)
+
+        if (Array.isArray(product['images'])) {
+          product['images'] = (product['images'] as string[]).map((img) => {
+            const match = img.match(/url=([^,}]+)/)
+            return match?.[1]?.trim() ?? img
+          })
+        }
+
+        list.push(product)
+      }
+      if (group.nextPageToken !== undefined) {
+        nextPageToken = group.nextPageToken ?? null
+      }
+    }
+
+    res.json({ success: true, data: { list, nextPageToken } })
   } catch (err) {
     res.status(500).json({ error: (err as Error).message })
   }
