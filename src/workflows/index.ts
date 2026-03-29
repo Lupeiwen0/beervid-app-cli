@@ -207,6 +207,11 @@ export function encodeCursor(cursor: ProductCursor): string | null {
   return Buffer.from(JSON.stringify(cursor)).toString('base64')
 }
 
+function normalizeNextPageToken(token: string | null | undefined): string | null {
+  if (token === undefined || token === null) return null
+  return token.trim() === '' ? null : token
+}
+
 export function flattenProductGroups(rawGroups: ProductPageData[]): FlatProductItem[] {
   const seen = new Set<string>()
   const list: FlatProductItem[] = []
@@ -277,8 +282,7 @@ export async function queryProductsPage(
     rawGroups.push(...groups)
 
     for (const group of groups) {
-      // Preserve null — it means "this source has no more pages"
-      const token = group.nextPageToken === undefined ? null : group.nextPageToken
+      const token = normalizeNextPageToken(group.nextPageToken)
       if (type === 'shop') nextShopToken = token
       if (type === 'showcase') nextShowcaseToken = token
 
