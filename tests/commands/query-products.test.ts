@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { runCommand } from '../helpers/cli.js'
+import { decodeCursor } from '../../src/workflows/index.js'
 
 const { openApiPost, printResult } = vi.hoisted(() => ({
   openApiPost: vi.fn(),
@@ -144,8 +145,12 @@ describe('query-products command', () => {
       shopName: 'Shop C',
       productType: 'showcase',
     })
-    // shop has nextPageToken 'shop-next', showcase has '' → composite cursor exists
+    // shop has nextPageToken 'shop-next', showcase has '' → only shop should remain pageable
     expect(call.nextPage).toEqual(expect.any(String))
+    expect(decodeCursor(call.nextPage)).toEqual({
+      shopToken: 'shop-next',
+      showcaseToken: null,
+    })
   })
 
   it('preserves null tokens in cursor and skips exhausted sources', async () => {
@@ -245,6 +250,48 @@ describe('query-products command', () => {
         },
       ],
       nextPage: expect.any(String),
+    })
+  })
+
+  it('prints last-page result when single-source nextPageToken is empty string', async () => {
+    openApiPost.mockResolvedValueOnce({
+      productType: 'shop',
+      nextPageToken: '',
+      products: [
+        {
+          id: 'p-5',
+          title: 'Shop last page',
+          images: ['https://img.example.com/shop-last.jpg'],
+          salesCount: 5,
+          brandName: 'Brand F',
+          shopName: 'Shop F',
+        },
+      ],
+    })
+
+    const result = await runCommand(register, [
+      'query-products',
+      '--creator-id',
+      'creator-1',
+      '--product-type',
+      'shop',
+    ])
+
+    expect(result.exitCode).toBeUndefined()
+    expect(result.logs.some((line) => line.includes('已到最后一页'))).toBe(true)
+    expect(printResult).toHaveBeenCalledWith({
+      list: [
+        {
+          id: 'p-5',
+          title: 'Shop last page',
+          images: ['https://img.example.com/shop-last.jpg'],
+          salesCount: 5,
+          brandName: 'Brand F',
+          shopName: 'Shop F',
+          productType: 'shop',
+        },
+      ],
+      nextPage: null,
     })
   })
 

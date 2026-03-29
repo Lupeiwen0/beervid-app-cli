@@ -146,6 +146,26 @@ describe('workflow product pagination', () => {
     })
     expect(result.nextCursor).toBeNull()
   })
+
+  it('treats empty-string nextPageToken as exhausted for single-source queries', async () => {
+    openApiPost.mockResolvedValueOnce({
+      nextPageToken: '',
+      products: [
+        {
+          id: 'shop-1',
+          title: 'Shop page 1',
+          salesCount: 10,
+        },
+      ],
+    })
+
+    const result = await queryProductsPage('creator-1', 'shop', 20, {
+      shopToken: '',
+      showcaseToken: '',
+    })
+
+    expect(result.nextCursor).toBeNull()
+  })
 })
 
 function makeProduct(overrides: Partial<NormalizedProductItem> = {}): NormalizedProductItem {
